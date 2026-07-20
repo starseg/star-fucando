@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <g transform="translate(0, 1)">
+    <!-- Estrela Dourada / Ícone da Star Fuçando -->
+    <path d="M16 2L19.5 10.5L28 11.5L21.5 17.2L23.5 25.5L16 21L8.5 25.5L10.5 17.2L4 11.5L12.5 10.5L16 2Z" fill="#E3AE12" stroke="#F59E0B" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- Lupa sobreposta / Elemento "Fuçando" -->
+    <circle cx="21" cy="20" r="4.5" fill="#18181B" stroke="#E3AE12" stroke-width="1.5"/>
+    <path d="M24.5 23.5L28.5 27.5" stroke="#E3AE12" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+</svg>
