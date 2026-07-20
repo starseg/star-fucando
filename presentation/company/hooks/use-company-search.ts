@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CompanyData } from "@/domain/company/entities/company-data";
-import { formatCnpjInput, isValidCnpj } from "@/domain/company/value-objects/cnpj";
+import { formatCnpjInput, isValidCnpj, sanitizeCnpj } from "@/domain/company/value-objects/cnpj";
 
 export function useCompanySearch() {
   const [input, setInput] = useState("");
@@ -25,7 +25,8 @@ export function useCompanySearch() {
     setData(null);
 
     try {
-      const response = await fetch(`/api/company/${input}`, { cache: "no-store" });
+      const cleanCnpj = sanitizeCnpj(input);
+      const response = await fetch(`/api/company/${cleanCnpj}`, { cache: "no-store" });
       const payload = (await response.json()) as { data?: CompanyData; error?: string };
       if (!response.ok || !payload.data) throw new Error(payload.error ?? "Erro ao consultar CNPJ.");
       setData(payload.data);
