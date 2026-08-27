@@ -1,0 +1,89 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Employee {
+  id               String             @id @default(uuid())
+  name             String
+  admissionDate    DateTime?
+  department       String?
+  role             String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  transportVoucher TransportVoucher[]
+  mealVoucher      MealVoucher[]
+  attendanceAward  AttendanceAward[]
+}
+
+model TransportVoucher {
+  id                  String   @id @default(uuid())
+  employeeId          String
+  employee            Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  referenceMonth      DateTime // Ex: 2023-10-01
+  
+  // Valores
+  inboundValue        Decimal  @db.Decimal(10, 2)
+  outboundValue       Decimal  @db.Decimal(10, 2)
+  weekendHolidayValue Decimal? @db.Decimal(10, 2)
+  
+  // Quantidades
+  workingDays         Int
+  weekendHolidayDays  Int      @default(0)
+  
+  // Indicadores
+  nightJokerIndicator Boolean  @default(false)
+  
+  // Totais e Ajustes
+  totalVouchers       Int
+  totalValue          Decimal  @db.Decimal(10, 2)
+  discountPercentage  Decimal? @db.Decimal(5, 2) // Ex: 6 para 6%
+  observations        String?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  modals              TransportModal[]
+}
+
+model TransportModal {
+  id                 String           @id @default(uuid())
+  transportVoucherId String
+  transportVoucher   TransportVoucher @relation(fields: [transportVoucherId], references: [id], onDelete: Cascade)
+  name               String           // Ex: Girassol, Uber, Van
+  unitValue          Decimal          @db.Decimal(10, 2)
+  quantity           Int
+  subtotal           Decimal          @db.Decimal(10, 2)
+}
+
+model MealVoucher {
+  id             String   @id @default(uuid())
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  referenceMonth DateTime
+  
+  unitValue      Decimal  @db.Decimal(10, 2)
+  workedDays     Int
+  voucherCount   Int
+  totalValue     Decimal  @db.Decimal(10, 2)
+  discounts      Decimal? @db.Decimal(10, 2)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AttendanceAward {
+  id             String   @id @default(uuid())
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  referenceMonth DateTime
+  
+  bonusValue     Decimal  @db.Decimal(10, 2) // Valor da bonificação
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
