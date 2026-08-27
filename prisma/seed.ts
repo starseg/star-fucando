@@ -179,7 +179,7 @@ async function main() {
     { employeeName: "Alan Junior Soares de Oliveira", unitValue: 30.0, workedDays: 21, voucherCount: 21, totalValue: 630.0, discounts: 0 },
     { employeeName: "Adolfo Bisceglia Atolini", unitValue: 30.0, workedDays: 21, voucherCount: 21, totalValue: 630.0, discounts: 0 },
     { employeeName: "Daniel Leonardi dos Santos", unitValue: 30.0, workedDays: 21, voucherCount: 21, totalValue: 630.0, discounts: 0 },
-    { employeeName: "Isaque Atolini Gaspar", unitValue: 30.0, workedDays: 0, voucherCount: 0, totalValue: 0.0, discounts: 0 },
+    { employeeName: "Isaque Atolini Gaspar", unitValue: 22.0, workedDays: 18, voucherCount: 18, totalValue: 396.0, discounts: 0 },
     { employeeName: "Rafael Nogueira Barbosa Cruz", unitValue: 30.0, workedDays: 21, voucherCount: 21, totalValue: 630.0, discounts: 0 },
   ];
 

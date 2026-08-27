@@ -34,7 +34,7 @@ const mealVoucherSchema = z.object({
   employeeId: z.string().min(1, "Selecione o colaborador"),
   referenceMonth: z.string().min(1, "Mês de referência obrigatório"),
   unitValue: z.coerce.number().min(0, "Valor unitário não pode ser negativo"),
-  workedDays: z.coerce.number().min(1, "Informe os dias trabalhados"),
+  workedDays: z.coerce.number().min(0, "Informe os dias trabalhados"),
   voucherCount: z.coerce.number().min(0),
   totalValue: z.coerce.number().min(0),
   discounts: z.coerce.number().optional().nullable(),

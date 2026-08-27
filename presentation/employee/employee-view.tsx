@@ -6,7 +6,7 @@ import { EmployeeDialog } from "./components/employee-dialog";
 import { StatsCard } from "@/presentation/shared/stats-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Search, Users, Building, ShieldCheck, RefreshCw } from "lucide-react";
+import { UserPlus, Search, Users, Building, RefreshCw } from "lucide-react";
 import { getEmployees } from "@/application/employee/employee-actions";
 import { toast } from "sonner";
 
@@ -79,7 +79,7 @@ export function EmployeeView() {
       </div>
 
       {/* Métricas Rápidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatsCard
           title="Colaboradores Ativos"
           value={`${employees.length} pessoas`}
@@ -93,13 +93,6 @@ export function EmployeeView() {
           subtitle="Setores operacionais e administrativos"
           icon={Building}
           color="stone"
-        />
-        <StatsCard
-          title="Status do Sistema"
-          value="100% Regular"
-          subtitle="Benefícios sincronizados"
-          icon={ShieldCheck}
-          color="emerald"
         />
       </div>
 

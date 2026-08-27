@@ -51,9 +51,7 @@ export function AttendanceAwardTable({
 }: AttendanceAwardTableProps) {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
-  const eligibleAwards = awards.filter((a) => Number(a.bonusValue) > 0);
-  const allEligibleSelected =
-    eligibleAwards.length > 0 && selectedIds.length === eligibleAwards.length;
+  const allSelected = awards.length > 0 && selectedIds.length === awards.length;
 
   const handleDelete = async (id: string, employeeName: string) => {
     if (!confirm(`Excluir a premiação de assiduidade de "${employeeName}"?`)) {
@@ -97,9 +95,9 @@ export function AttendanceAwardTable({
           <TableRow className="border-none hover:bg-transparent">
             <TableHead className="w-12 text-center">
               <Checkbox
-                checked={allEligibleSelected}
+                checked={allSelected}
                 onCheckedChange={(checked) => onToggleSelectAll(Boolean(checked))}
-                aria-label="Selecionar todos os elegíveis"
+                aria-label="Selecionar todos"
               />
             </TableHead>
             <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
@@ -118,7 +116,6 @@ export function AttendanceAwardTable({
         </TableHeader>
         <TableBody>
           {awards.map((award) => {
-            const hasBonus = Number(award.bonusValue) > 0;
             const isSelected = selectedIds.includes(award.id);
 
             return (
@@ -126,25 +123,18 @@ export function AttendanceAwardTable({
                 key={award.id}
                 className={`border-b border-stone-800/60 transition-colors ${
                   isSelected ? "bg-sky-500/10 hover:bg-sky-500/15" : "hover:bg-stone-800/30"
-                } ${!hasBonus ? "opacity-60" : ""}`}
+                }`}
               >
                 <TableCell className="text-center">
                   <Checkbox
                     checked={isSelected}
-                    disabled={!hasBonus}
-                    onCheckedChange={() => hasBonus && onToggleSelect(award.id)}
+                    onCheckedChange={() => onToggleSelect(award.id)}
                     aria-label={`Selecionar ${award.employee.name}`}
                   />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black border ${
-                        hasBonus
-                          ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
-                          : "bg-stone-800 text-stone-500 border-stone-700"
-                      }`}
-                    >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black border bg-sky-500/10 text-sky-400 border-sky-500/20">
                       {award.employee.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -161,34 +151,22 @@ export function AttendanceAwardTable({
                   {formatMonthYear(award.referenceMonth)}
                 </TableCell>
                 <TableCell className="text-right">
-                  {hasBonus ? (
-                    <span className="text-base font-black text-sky-400 block">
-                      {formatCurrency(award.bonusValue)}
-                    </span>
-                  ) : (
-                    <Badge variant="outline" className="border-stone-800 text-stone-300 text-[11px] bg-stone-900/60 font-normal">
-                      Sem prêmio no período
-                    </Badge>
-                  )}
+                  <span className="text-base font-black text-sky-400 block">
+                    {formatCurrency(award.bonusValue)}
+                  </span>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    {hasBonus ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onPrint([award.id])}
-                        className="h-8 px-2.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10 rounded-lg"
-                        title="Imprimir recibo individual"
-                      >
-                        <Printer className="mr-1 h-3.5 w-3.5" />
-                        Recibo
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-stone-300 px-2.5 py-1 block">
-                        —
-                      </span>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onPrint([award.id])}
+                      className="h-8 px-2.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10 rounded-lg"
+                      title="Imprimir recibo individual"
+                    >
+                      <Printer className="mr-1 h-3.5 w-3.5" />
+                      Recibo
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

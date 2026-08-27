@@ -9,10 +9,8 @@ import {
   Utensils,
   Award,
   Search,
-  ReceiptText,
   Menu,
   X,
-  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -65,12 +63,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="flex min-h-screen bg-[#0c0a09] text-stone-100">
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex w-64 flex-col border-r border-stone-800 bg-[#141210]/95 backdrop-blur-md">
-        <div className="flex h-16 items-center gap-3 border-b border-stone-800 px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-stone-950 font-black shadow-md shadow-amber-500/20">
-            <Building2 className="h-5 w-5" />
-          </div>
+        <div className="flex h-16 items-center border-b border-stone-800 px-6">
           <div>
-            <span className="font-bold tracking-tight text-stone-100 text-base">Star Seg</span>
+            <span className="font-bold tracking-tight text-stone-100 text-lg">Star Seg</span>
             <span className="block text-[11px] font-medium text-amber-500 uppercase tracking-wider">Recibos & Benefícios</span>
           </div>
         </div>
@@ -106,29 +101,14 @@ export function AppLayout({ children }: AppLayoutProps) {
             );
           })}
         </nav>
-
-        <div className="border-t border-stone-800 p-4">
-          <div className="rounded-lg bg-stone-900/90 border border-stone-800/80 p-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-stone-300 mb-1">
-              <ReceiptText className="h-3.5 w-3.5 text-amber-400" />
-              <span>Geração de Recibos</span>
-            </div>
-            <p className="text-[11px] text-stone-300 leading-relaxed">
-              Selecione os registros nas tabelas e imprima recibos individuais ou em lote.
-            </p>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Header Mobile */}
         <header className="flex h-16 items-center justify-between border-b border-stone-800 bg-[#141210]/95 px-4 md:hidden">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-stone-950 font-bold">
-              <Building2 className="h-4 w-4" />
-            </div>
-            <span className="font-bold text-stone-100 text-sm">Star Seg</span>
+          <div className="flex items-center">
+            <span className="font-bold text-stone-100 text-base">Star Seg</span>
           </div>
 
           <Button
