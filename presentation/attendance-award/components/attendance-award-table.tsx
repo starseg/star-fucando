@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency, formatMonthYear } from "@/lib/utils";
 import { Edit2, Trash2, Printer, Award } from "lucide-react";
@@ -50,7 +51,9 @@ export function AttendanceAwardTable({
 }: AttendanceAwardTableProps) {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
-  const allSelected = awards.length > 0 && selectedIds.length === awards.length;
+  const eligibleAwards = awards.filter((a) => Number(a.bonusValue) > 0);
+  const allEligibleSelected =
+    eligibleAwards.length > 0 && selectedIds.length === eligibleAwards.length;
 
   const handleDelete = async (id: string, employeeName: string) => {
     if (!confirm(`Excluir a premiação de assiduidade de "${employeeName}"?`)) {
@@ -81,7 +84,7 @@ export function AttendanceAwardTable({
         </div>
         <h3 className="text-base font-bold text-stone-200">Nenhum lançamento encontrado</h3>
         <p className="mt-1 text-xs text-stone-400 max-w-sm">
-          Clique no botão "Novo Lançamento" para cadastrar os prêmios de assiduidade deste mês.
+          Clique no botão "Nova Bonificação" para cadastrar os prêmios de assiduidade deste mês.
         </p>
       </div>
     );
@@ -94,9 +97,9 @@ export function AttendanceAwardTable({
           <TableRow className="border-none hover:bg-transparent">
             <TableHead className="w-12 text-center">
               <Checkbox
-                checked={allSelected}
+                checked={allEligibleSelected}
                 onCheckedChange={(checked) => onToggleSelectAll(Boolean(checked))}
-                aria-label="Selecionar todos"
+                aria-label="Selecionar todos os elegíveis"
               />
             </TableHead>
             <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
@@ -115,24 +118,33 @@ export function AttendanceAwardTable({
         </TableHeader>
         <TableBody>
           {awards.map((award) => {
+            const hasBonus = Number(award.bonusValue) > 0;
             const isSelected = selectedIds.includes(award.id);
+
             return (
               <TableRow
                 key={award.id}
                 className={`border-b border-stone-800/60 transition-colors ${
                   isSelected ? "bg-sky-500/10 hover:bg-sky-500/15" : "hover:bg-stone-800/30"
-                }`}
+                } ${!hasBonus ? "opacity-60" : ""}`}
               >
                 <TableCell className="text-center">
                   <Checkbox
                     checked={isSelected}
-                    onCheckedChange={() => onToggleSelect(award.id)}
+                    disabled={!hasBonus}
+                    onCheckedChange={() => hasBonus && onToggleSelect(award.id)}
                     aria-label={`Selecionar ${award.employee.name}`}
                   />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 text-xs font-black border border-sky-500/20">
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black border ${
+                        hasBonus
+                          ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                          : "bg-stone-800 text-stone-500 border-stone-700"
+                      }`}
+                    >
                       {award.employee.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -149,22 +161,34 @@ export function AttendanceAwardTable({
                   {formatMonthYear(award.referenceMonth)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className="text-base font-black text-sky-400 block">
-                    {formatCurrency(award.bonusValue)}
-                  </span>
+                  {hasBonus ? (
+                    <span className="text-base font-black text-sky-400 block">
+                      {formatCurrency(award.bonusValue)}
+                    </span>
+                  ) : (
+                    <Badge variant="outline" className="border-stone-800 text-stone-300 text-[11px] bg-stone-900/60 font-normal">
+                      Sem prêmio no período
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onPrint([award.id])}
-                      className="h-8 px-2.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10 rounded-lg"
-                      title="Imprimir recibo individual"
-                    >
-                      <Printer className="mr-1 h-3.5 w-3.5" />
-                      Recibo
-                    </Button>
+                    {hasBonus ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onPrint([award.id])}
+                        className="h-8 px-2.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10 rounded-lg"
+                        title="Imprimir recibo individual"
+                      >
+                        <Printer className="mr-1 h-3.5 w-3.5" />
+                        Recibo
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-stone-300 px-2.5 py-1 block">
+                        —
+                      </span>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

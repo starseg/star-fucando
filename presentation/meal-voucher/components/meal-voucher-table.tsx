@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/utils";
 import { Edit2, Trash2, Printer, Utensils } from "lucide-react";
@@ -55,7 +56,9 @@ export function MealVoucherTable({
 }: MealVoucherTableProps) {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
-  const allSelected = vouchers.length > 0 && selectedIds.length === vouchers.length;
+  const eligibleVouchers = vouchers.filter((v) => Number(v.netValue) > 0);
+  const allEligibleSelected =
+    eligibleVouchers.length > 0 && selectedIds.length === eligibleVouchers.length;
 
   const handleDelete = async (id: string, employeeName: string) => {
     if (!confirm(`Excluir o Vale Alimentação de "${employeeName}"?`)) {
@@ -99,9 +102,9 @@ export function MealVoucherTable({
           <TableRow className="border-none hover:bg-transparent">
             <TableHead className="w-12 text-center">
               <Checkbox
-                checked={allSelected}
+                checked={allEligibleSelected}
                 onCheckedChange={(checked) => onToggleSelectAll(Boolean(checked))}
-                aria-label="Selecionar todos"
+                aria-label="Selecionar todos os elegíveis"
               />
             </TableHead>
             <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
@@ -123,24 +126,33 @@ export function MealVoucherTable({
         </TableHeader>
         <TableBody>
           {vouchers.map((voucher) => {
+            const hasValue = Number(voucher.netValue) > 0;
             const isSelected = selectedIds.includes(voucher.id);
+
             return (
               <TableRow
                 key={voucher.id}
                 className={`border-b border-stone-800/60 transition-colors ${
                   isSelected ? "bg-emerald-500/10 hover:bg-emerald-500/15" : "hover:bg-stone-800/30"
-                }`}
+                } ${!hasValue ? "opacity-60" : ""}`}
               >
                 <TableCell className="text-center">
                   <Checkbox
                     checked={isSelected}
-                    onCheckedChange={() => onToggleSelect(voucher.id)}
+                    disabled={!hasValue}
+                    onCheckedChange={() => hasValue && onToggleSelect(voucher.id)}
                     aria-label={`Selecionar ${voucher.employee.name}`}
                   />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-black border border-emerald-500/20">
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black border ${
+                        hasValue
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : "bg-stone-800 text-stone-500 border-stone-700"
+                      }`}
+                    >
                       {voucher.employee.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -154,42 +166,66 @@ export function MealVoucherTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="space-y-0.5">
-                    <span className="text-sm font-semibold text-stone-200 block">
-                      {voucher.workedDays} dias úteis
-                    </span>
-                    <span className="text-xs text-stone-300">
-                      Diária de {formatCurrency(voucher.unitValue)}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <span className="text-sm font-semibold text-stone-300 block">
-                    {formatCurrency(voucher.totalValue)}
-                  </span>
-                  {voucher.discounts > 0 && (
-                    <span className="text-[10px] text-red-400">
-                      Desc. -{formatCurrency(voucher.discounts)}
-                    </span>
+                  {voucher.workedDays > 0 ? (
+                    <div className="space-y-0.5">
+                      <span className="text-sm font-semibold text-stone-200 block">
+                        {voucher.workedDays} dias úteis
+                      </span>
+                      <span className="text-xs text-stone-300">
+                        Diária de {formatCurrency(voucher.unitValue)}
+                      </span>
+                    </div>
+                  ) : (
+                    <Badge variant="outline" className="border-stone-800 text-stone-300 text-[11px] bg-stone-900/60 font-normal">
+                      0 dias trabalhados
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className="text-base font-black text-emerald-400 block">
-                    {formatCurrency(voucher.netValue)}
-                  </span>
+                  {voucher.workedDays > 0 ? (
+                    <>
+                      <span className="text-sm font-semibold text-stone-300 block">
+                        {formatCurrency(voucher.totalValue)}
+                      </span>
+                      {voucher.discounts > 0 && (
+                        <span className="text-[10px] text-red-400">
+                          Desc. -{formatCurrency(voucher.discounts)}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-stone-300">—</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {hasValue ? (
+                    <span className="text-base font-black text-emerald-400 block">
+                      {formatCurrency(voucher.netValue)}
+                    </span>
+                  ) : (
+                    <Badge variant="outline" className="border-stone-800 text-stone-300 text-[11px] bg-stone-900/60 font-normal">
+                      Sem valor a pagar
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onPrint([voucher.id])}
-                      className="h-8 px-2.5 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
-                      title="Imprimir recibo individual"
-                    >
-                      <Printer className="mr-1 h-3.5 w-3.5" />
-                      Recibo
-                    </Button>
+                    {hasValue ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onPrint([voucher.id])}
+                        className="h-8 px-2.5 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
+                        title="Imprimir recibo individual"
+                      >
+                        <Printer className="mr-1 h-3.5 w-3.5" />
+                        Recibo
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-stone-300 px-2.5 py-1 block">
+                        —
+                      </span>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

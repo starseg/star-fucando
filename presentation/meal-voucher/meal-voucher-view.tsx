@@ -13,9 +13,8 @@ import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function MealVoucherView() {
-  const currentDate = new Date();
-  const [selectedMonth, setSelectedMonth] = React.useState<number>(currentDate.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = React.useState<number>(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = React.useState<number>(4);
+  const [selectedYear, setSelectedYear] = React.useState<number>(2026);
 
   const [vouchers, setVouchers] = React.useState<MealVoucherData[]>([]);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
