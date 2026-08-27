@@ -26,14 +26,14 @@ import { upsertAttendanceAward, AttendanceAwardInput } from "@/application/atten
 import { getEmployees } from "@/application/employee/employee-actions";
 import { AttendanceAwardData } from "./attendance-award-table";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Award, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 const attendanceAwardSchema = z.object({
   id: z.string().optional(),
-  employeeId: z.string().min(1, "Selecione um colaborador"),
+  employeeId: z.string().min(1, "Selecione o colaborador"),
   referenceMonth: z.string().min(1, "Mês de referência obrigatório"),
-  bonusValue: z.coerce.number().min(0, "Valor do bônus não pode ser negativo"),
+  bonusValue: z.coerce.number().min(0.01, "Informe o valor da bonificação"),
 });
 
 type AttendanceAwardFormData = z.infer<typeof attendanceAwardSchema>;
@@ -80,7 +80,7 @@ export function AttendanceAwardDialog({
     },
   });
 
-  const watchedBonus = watch("bonusValue");
+  const watchedBonus = watch("bonusValue") || 0;
 
   React.useEffect(() => {
     async function loadEmployees() {
@@ -124,7 +124,7 @@ export function AttendanceAwardDialog({
 
       const res = await upsertAttendanceAward(payload);
       if (res.success) {
-        toast.success(data.id ? "Prêmio de Assiduidade atualizado!" : "Prêmio de Assiduidade cadastrado!");
+        toast.success(data.id ? "Prêmio de Assiduidade atualizado!" : "Prêmio de Assiduidade cadastrado com sucesso!");
         onSuccess();
         onClose();
       } else {
@@ -140,24 +140,31 @@ export function AttendanceAwardDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-stone-900 border-stone-800 text-stone-100">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-stone-100">
-            {awardToEdit ? "Editar Prêmio de Assiduidade" : "Novo Prêmio de Assiduidade"}
-          </DialogTitle>
-          <DialogDescription className="text-stone-400">
-            Lançamento de bonificação por assiduidade para o colaborador.
-          </DialogDescription>
+      <DialogContent className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl">
+        <DialogHeader className="pb-3 border-b border-stone-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <Award className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-bold text-stone-100">
+                {awardToEdit ? "Editar Prêmio de Assiduidade" : "Novo Prêmio de Assiduidade"}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-stone-400">
+                Lançamento de bonificação por assiduidade integral.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label className="text-stone-300">Colaborador *</Label>
+            <Label className="text-xs font-semibold text-stone-300">Colaborador *</Label>
             <Select
               value={watch("employeeId")}
               onValueChange={(val) => setValue("employeeId", val)}
             >
-              <SelectTrigger className="bg-stone-950/60 border-stone-800 text-stone-100">
+              <SelectTrigger className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl">
                 <SelectValue placeholder="Selecione o colaborador" />
               </SelectTrigger>
               <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
@@ -174,59 +181,63 @@ export function AttendanceAwardDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-stone-300">Data de Referência (Mês/Ano) *</Label>
+            <Label className="text-xs font-semibold text-stone-300">Mês de Referência *</Label>
             <Input
               type="date"
               {...register("referenceMonth")}
-              className="bg-stone-950/60 border-stone-800 text-stone-100"
+              className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl"
             />
-            {errors.referenceMonth && (
-              <p className="text-xs text-red-400">{errors.referenceMonth.message}</p>
-            )}
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-stone-300">Valor da Bonificação (R$) *</Label>
+            <Label className="text-xs font-semibold text-stone-300">Valor da Bonificação (R$) *</Label>
             <Input
               type="number"
               step="0.01"
+              placeholder="Ex: 300,00"
               {...register("bonusValue")}
-              className="bg-stone-950/60 border-stone-800 text-stone-100"
+              className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl font-semibold"
             />
             {errors.bonusValue && (
               <p className="text-xs text-red-400">{errors.bonusValue.message}</p>
             )}
           </div>
 
-          <div className="rounded-lg bg-sky-500/10 p-3 border border-sky-500/20 flex items-center justify-between">
-            <span className="text-xs text-sky-300 font-medium">Valor Total da Premiação</span>
-            <span className="text-base font-bold text-sky-400">{formatCurrency(watchedBonus)}</span>
+          {/* Destaque do Valor da Bonificação */}
+          <div className="rounded-xl bg-sky-500/10 border border-sky-500/25 p-4 flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Valor da Premiação
+            </span>
+            <span className="text-2xl font-black text-sky-400">
+              {formatCurrency(watchedBonus)}
+            </span>
           </div>
 
           <DialogFooter className="pt-3 border-t border-stone-800">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={onClose}
               disabled={isLoading}
-              className="border-stone-700 hover:bg-stone-800 text-stone-300"
+              className="text-stone-400 hover:text-stone-100 text-xs"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-sky-500 text-stone-950 hover:bg-sky-400 font-semibold"
+              className="bg-sky-500 text-stone-950 hover:bg-sky-400 font-bold px-5 rounded-xl shadow-md shadow-sky-500/20"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   Salvando...
                 </>
               ) : awardToEdit ? (
                 "Salvar Alterações"
               ) : (
-                "Cadastrar"
+                "Cadastrar Premiação"
               )}
             </Button>
           </DialogFooter>

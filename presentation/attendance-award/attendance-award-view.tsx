@@ -3,16 +3,13 @@
 import * as React from "react";
 import { AttendanceAwardTable, AttendanceAwardData } from "./components/attendance-award-table";
 import { AttendanceAwardDialog } from "./components/attendance-award-dialog";
+import { MonthNavigator } from "@/presentation/shared/month-navigator";
+import { StatsCard } from "@/presentation/shared/stats-card";
+import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Award, Plus, Printer, RefreshCw } from "lucide-react";
+import { Award, Plus, Users, DollarSign, Trophy, RefreshCw } from "lucide-react";
 import { getAttendanceAwards } from "@/application/attendance-award/attendance-award-actions";
+import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function AttendanceAwardView() {
@@ -80,114 +77,75 @@ export function AttendanceAwardView() {
     window.open(url, "_blank");
   };
 
-  const months = [
-    { value: 1, label: "Janeiro" },
-    { value: 2, label: "Fevereiro" },
-    { value: 3, label: "Março" },
-    { value: 4, label: "Abril" },
-    { value: 5, label: "Maio" },
-    { value: 6, label: "Junho" },
-    { value: 7, label: "Julho" },
-    { value: 8, label: "Agosto" },
-    { value: 9, label: "Setembro" },
-    { value: 10, label: "Outubro" },
-    { value: 11, label: "Novembro" },
-    { value: 12, label: "Dezembro" },
-  ];
-
-  const years = [2024, 2025, 2026, 2027];
+  const totalBonusSum = awards.reduce((acc, a) => acc + Number(a.bonusValue), 0);
+  const averageBonus = awards.length > 0 ? totalBonusSum / awards.length : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 pb-12">
+      {/* Header com Navegação de Mês */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <Award className="h-6 w-6 text-sky-500" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <Award className="h-4 w-4" />
+            </div>
             <h1 className="text-2xl font-bold tracking-tight text-stone-100">Prêmio Assiduidade</h1>
           </div>
-          <p className="mt-1 text-sm text-stone-400">
-            Lançamentos de premiações por assiduidade e emissão de recibos de pagamento.
+          <p className="mt-1 text-xs text-stone-400">
+            Controle de bonificações por pontualidade e emissão de recibos de pagamento.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            onClick={() => handlePrint(selectedIds)}
-            disabled={selectedIds.length === 0}
-            className="border-sky-500/40 text-sky-400 hover:bg-sky-500/10 font-medium"
-          >
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir Selecionados ({selectedIds.length})
-          </Button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <MonthNavigator
+            month={selectedMonth}
+            year={selectedYear}
+            onChange={(m, y) => {
+              setSelectedMonth(m);
+              setSelectedYear(y);
+            }}
+          />
 
           <Button
             onClick={handleOpenCreate}
-            className="bg-sky-500 text-stone-950 hover:bg-sky-400 font-semibold shadow-md shadow-sky-500/10"
+            className="bg-sky-500 text-stone-950 hover:bg-sky-400 font-bold shadow-md shadow-sky-500/20 rounded-xl h-10 px-4"
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Lançamento
+            <Plus className="mr-1.5 h-4 w-4" />
+            Nova Bonificação
           </Button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-stone-900/60 p-3 rounded-xl border border-stone-800">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
-            Competência:
-          </span>
-          <Select
-            value={String(selectedMonth)}
-            onValueChange={(val) => setSelectedMonth(Number(val))}
-          >
-            <SelectTrigger className="w-[140px] bg-stone-950 border-stone-800 text-stone-100 h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-              {months.map((m) => (
-                <SelectItem key={m.value} value={String(m.value)}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={String(selectedYear)}
-            onValueChange={(val) => setSelectedYear(Number(val))}
-          >
-            <SelectTrigger className="w-[100px] bg-stone-950 border-stone-800 text-stone-100 h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => fetchAwards()}
-          disabled={isLoading}
-          className="text-stone-400 hover:text-stone-100"
-        >
-          <RefreshCw className={`mr-2 h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-          Atualizar Lançamentos
-        </Button>
+      {/* Métricas do Mês */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatsCard
+          title="Total em Premiações"
+          value={formatCurrency(totalBonusSum)}
+          subtitle="Valor total distribuído no mês"
+          icon={DollarSign}
+          color="sky"
+        />
+        <StatsCard
+          title="Colaboradores Premiados"
+          value={`${awards.length} pessoas`}
+          subtitle="Cumpriram 100% da assiduidade"
+          icon={Users}
+          color="stone"
+        />
+        <StatsCard
+          title="Média por Colaborador"
+          value={formatCurrency(averageBonus)}
+          subtitle="Ticket médio da bonificação"
+          icon={Trophy}
+          color="sky"
+        />
       </div>
 
-      {/* Content */}
+      {/* Tabela de Lançamentos */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-xl border border-stone-800 bg-stone-900/40">
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-stone-800 bg-stone-900/40">
           <RefreshCw className="h-6 w-6 animate-spin text-sky-500" />
-          <span className="ml-3 text-sm text-stone-400">Carregando prêmios de assiduidade...</span>
+          <span className="ml-3 text-xs text-stone-400">Carregando premiações...</span>
         </div>
       ) : (
         <AttendanceAwardTable
@@ -201,7 +159,7 @@ export function AttendanceAwardView() {
         />
       )}
 
-      {/* Dialog */}
+      {/* Diálogo de Cadastro / Edição */}
       <AttendanceAwardDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
@@ -209,6 +167,15 @@ export function AttendanceAwardView() {
         awardToEdit={awardToEdit}
         defaultMonth={selectedMonth}
         defaultYear={selectedYear}
+      />
+
+      {/* Barra Flutuante de Ação em Lote */}
+      <SelectionActionBar
+        selectedCount={selectedIds.length}
+        totalCount={awards.length}
+        onPrint={() => handlePrint(selectedIds)}
+        onClear={() => setSelectedIds([])}
+        benefitType="Prêmio de Assiduidade"
       />
     </div>
   );

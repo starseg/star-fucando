@@ -3,16 +3,13 @@
 import * as React from "react";
 import { MealVoucherTable, MealVoucherData } from "./components/meal-voucher-table";
 import { MealVoucherDialog } from "./components/meal-voucher-dialog";
+import { MonthNavigator } from "@/presentation/shared/month-navigator";
+import { StatsCard } from "@/presentation/shared/stats-card";
+import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Utensils, Plus, Printer, RefreshCw } from "lucide-react";
+import { Utensils, Plus, Users, DollarSign, CalendarCheck, RefreshCw } from "lucide-react";
 import { getMealVouchers } from "@/application/meal-voucher/meal-voucher-actions";
+import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function MealVoucherView() {
@@ -80,114 +77,75 @@ export function MealVoucherView() {
     window.open(url, "_blank");
   };
 
-  const months = [
-    { value: 1, label: "Janeiro" },
-    { value: 2, label: "Fevereiro" },
-    { value: 3, label: "Março" },
-    { value: 4, label: "Abril" },
-    { value: 5, label: "Maio" },
-    { value: 6, label: "Junho" },
-    { value: 7, label: "Julho" },
-    { value: 8, label: "Agosto" },
-    { value: 9, label: "Setembro" },
-    { value: 10, label: "Outubro" },
-    { value: 11, label: "Novembro" },
-    { value: 12, label: "Dezembro" },
-  ];
-
-  const years = [2024, 2025, 2026, 2027];
+  const totalNetSum = vouchers.reduce((acc, v) => acc + Number(v.netValue), 0);
+  const totalDaysSum = vouchers.reduce((acc, v) => acc + Number(v.workedDays), 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 pb-12">
+      {/* Header com Navegação de Mês */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <Utensils className="h-6 w-6 text-emerald-500" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Utensils className="h-4 w-4" />
+            </div>
             <h1 className="text-2xl font-bold tracking-tight text-stone-100">Vale Alimentação</h1>
           </div>
-          <p className="mt-1 text-sm text-stone-400">
-            Lançamentos, diárias, coparticipações e emissão de recibos de vale alimentação.
+          <p className="mt-1 text-xs text-stone-400">
+            Controle de diárias, coparticipações e emissão de recibos de alimentação/refeição.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            onClick={() => handlePrint(selectedIds)}
-            disabled={selectedIds.length === 0}
-            className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-medium"
-          >
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir Selecionados ({selectedIds.length})
-          </Button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <MonthNavigator
+            month={selectedMonth}
+            year={selectedYear}
+            onChange={(m, y) => {
+              setSelectedMonth(m);
+              setSelectedYear(y);
+            }}
+          />
 
           <Button
             onClick={handleOpenCreate}
-            className="bg-emerald-500 text-stone-950 hover:bg-emerald-400 font-semibold shadow-md shadow-emerald-500/10"
+            className="bg-emerald-500 text-stone-950 hover:bg-emerald-400 font-bold shadow-md shadow-emerald-500/20 rounded-xl h-10 px-4"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1.5 h-4 w-4" />
             Novo Lançamento
           </Button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-stone-900/60 p-3 rounded-xl border border-stone-800">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
-            Competência:
-          </span>
-          <Select
-            value={String(selectedMonth)}
-            onValueChange={(val) => setSelectedMonth(Number(val))}
-          >
-            <SelectTrigger className="w-[140px] bg-stone-950 border-stone-800 text-stone-100 h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-              {months.map((m) => (
-                <SelectItem key={m.value} value={String(m.value)}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={String(selectedYear)}
-            onValueChange={(val) => setSelectedYear(Number(val))}
-          >
-            <SelectTrigger className="w-[100px] bg-stone-950 border-stone-800 text-stone-100 h-9 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => fetchVouchers()}
-          disabled={isLoading}
-          className="text-stone-400 hover:text-stone-100"
-        >
-          <RefreshCw className={`mr-2 h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-          Atualizar Lançamentos
-        </Button>
+      {/* Métricas do Mês */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatsCard
+          title="Líquido Consolidado"
+          value={formatCurrency(totalNetSum)}
+          subtitle="Valor total a pagar no mês"
+          icon={DollarSign}
+          color="emerald"
+        />
+        <StatsCard
+          title="Colaboradores Atendidos"
+          value={`${vouchers.length} pessoas`}
+          subtitle="Com créditos de alimentação"
+          icon={Users}
+          color="stone"
+        />
+        <StatsCard
+          title="Total de Diárias Pagas"
+          value={`${totalDaysSum} dias`}
+          subtitle="Soma de dias trabalhados"
+          icon={CalendarCheck}
+          color="emerald"
+        />
       </div>
 
-      {/* Content */}
+      {/* Tabela de Lançamentos */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-xl border border-stone-800 bg-stone-900/40">
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-stone-800 bg-stone-900/40">
           <RefreshCw className="h-6 w-6 animate-spin text-emerald-500" />
-          <span className="ml-3 text-sm text-stone-400">Carregando vales alimentação...</span>
+          <span className="ml-3 text-xs text-stone-400">Carregando lançamentos...</span>
         </div>
       ) : (
         <MealVoucherTable
@@ -201,7 +159,7 @@ export function MealVoucherView() {
         />
       )}
 
-      {/* Dialog */}
+      {/* Diálogo de Cadastro / Edição */}
       <MealVoucherDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
@@ -209,6 +167,15 @@ export function MealVoucherView() {
         voucherToEdit={voucherToEdit}
         defaultMonth={selectedMonth}
         defaultYear={selectedYear}
+      />
+
+      {/* Barra Flutuante de Ação em Lote */}
+      <SelectionActionBar
+        selectedCount={selectedIds.length}
+        totalCount={vouchers.length}
+        onPrint={() => handlePrint(selectedIds)}
+        onClear={() => setSelectedIds([])}
+        benefitType="Vale Alimentação"
       />
     </div>
   );

@@ -53,7 +53,7 @@ export function AttendanceAwardTable({
   const allSelected = awards.length > 0 && selectedIds.length === awards.length;
 
   const handleDelete = async (id: string, employeeName: string) => {
-    if (!confirm(`Deseja realmente excluir a premiação de assiduidade de "${employeeName}"?`)) {
+    if (!confirm(`Excluir a premiação de assiduidade de "${employeeName}"?`)) {
       return;
     }
 
@@ -75,120 +75,122 @@ export function AttendanceAwardTable({
 
   if (awards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-stone-800 bg-stone-900/40 p-12 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-800 text-stone-400 mb-3">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-stone-800 bg-stone-900/30 p-12 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 mb-3">
           <Award className="h-6 w-6" />
         </div>
-        <h3 className="text-base font-semibold text-stone-200">Nenhum lançamento no período selecionado</h3>
-        <p className="mt-1 text-sm text-stone-400 max-w-sm">
-          Cadastre os lançamentos de Prêmio de Assiduidade do mês para emitir os recibos correspondentes.
+        <h3 className="text-base font-bold text-stone-200">Nenhum lançamento encontrado</h3>
+        <p className="mt-1 text-xs text-stone-400 max-w-sm">
+          Clique no botão "Novo Lançamento" para cadastrar os prêmios de assiduidade deste mês.
         </p>
       </div>
     );
   }
 
-  const grandTotal = awards.reduce((acc, a) => acc + Number(a.bonusValue), 0);
-
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-stone-800 bg-stone-900/70 backdrop-blur overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader className="bg-stone-950/60">
-            <TableRow className="border-stone-800 hover:bg-transparent">
-              <TableHead className="w-12 text-center">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={(checked) => onToggleSelectAll(Boolean(checked))}
-                  aria-label="Selecionar todos"
-                />
-              </TableHead>
-              <TableHead className="text-stone-400 font-semibold">Colaborador</TableHead>
-              <TableHead className="text-stone-400 font-semibold">Competência</TableHead>
-              <TableHead className="text-stone-400 font-semibold text-right">Valor da Bonificação</TableHead>
-              <TableHead className="text-stone-400 font-semibold text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {awards.map((award) => {
-              const isSelected = selectedIds.includes(award.id);
-              return (
-                <TableRow
-                  key={award.id}
-                  className={`border-stone-800/80 transition-colors ${
-                    isSelected ? "bg-sky-500/10 hover:bg-sky-500/15" : "hover:bg-stone-800/40"
-                  }`}
-                >
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => onToggleSelect(award.id)}
-                      aria-label={`Selecionar ${award.employee.name}`}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium text-stone-100">
+    <div className="rounded-2xl border border-stone-800/90 bg-[#12100e]/80 backdrop-blur-md overflow-hidden shadow-sm">
+      <Table>
+        <TableHeader className="bg-stone-950/80 border-b border-stone-800">
+          <TableRow className="border-none hover:bg-transparent">
+            <TableHead className="w-12 text-center">
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={(checked) => onToggleSelectAll(Boolean(checked))}
+                aria-label="Selecionar todos"
+              />
+            </TableHead>
+            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
+              Colaborador
+            </TableHead>
+            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
+              Competência
+            </TableHead>
+            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right">
+              Valor da Bonificação
+            </TableHead>
+            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right w-36">
+              Ações
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {awards.map((award) => {
+            const isSelected = selectedIds.includes(award.id);
+            return (
+              <TableRow
+                key={award.id}
+                className={`border-b border-stone-800/60 transition-colors ${
+                  isSelected ? "bg-sky-500/10 hover:bg-sky-500/15" : "hover:bg-stone-800/30"
+                }`}
+              >
+                <TableCell className="text-center">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onToggleSelect(award.id)}
+                    aria-label={`Selecionar ${award.employee.name}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 text-xs font-black border border-sky-500/20">
+                      {award.employee.name.charAt(0).toUpperCase()}
+                    </div>
                     <div>
-                      <span className="font-semibold text-stone-100">{award.employee.name}</span>
-                      <span className="block text-xs text-stone-300">
-                        {award.employee.department || "Geral"} • {award.employee.role || "-"}
+                      <span className="font-bold text-stone-100 text-sm block">
+                        {award.employee.name}
+                      </span>
+                      <span className="text-xs text-stone-300">
+                        {award.employee.department || "Operacional"} • {award.employee.role || "Colaborador"}
                       </span>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-stone-300 text-xs">
-                    {formatMonthYear(award.referenceMonth)}
-                  </TableCell>
-                  <TableCell className="text-right font-bold text-sky-400">
+                  </div>
+                </TableCell>
+                <TableCell className="text-xs font-medium text-stone-300">
+                  {formatMonthYear(award.referenceMonth)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="text-base font-black text-sky-400 block">
                     {formatCurrency(award.bonusValue)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onPrint([award.id])}
-                        className="h-8 w-8 text-stone-400 hover:text-sky-400 hover:bg-sky-400/10"
-                        title="Imprimir recibo"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(award)}
-                        className="h-8 w-8 text-stone-400 hover:text-stone-200 hover:bg-stone-800"
-                        title="Editar lançamento"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(award.id, award.employee.name)}
-                        disabled={deletingId === award.id}
-                        className="h-8 w-8 text-stone-400 hover:text-red-400 hover:bg-red-400/10"
-                        title="Excluir lançamento"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Summary Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-stone-800 bg-stone-950/60 p-4">
-        <div className="text-xs text-stone-400">
-          Total de registros: <span className="font-semibold text-stone-200">{awards.length}</span> | 
-          Selecionados: <span className="font-semibold text-sky-400">{selectedIds.length}</span>
-        </div>
-        <div className="text-right">
-          <span className="text-[11px] uppercase tracking-wider text-stone-300 block">Total em Premiações</span>
-          <span className="text-base font-black text-sky-400">{formatCurrency(grandTotal)}</span>
-        </div>
-      </div>
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onPrint([award.id])}
+                      className="h-8 px-2.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10 rounded-lg"
+                      title="Imprimir recibo individual"
+                    >
+                      <Printer className="mr-1 h-3.5 w-3.5" />
+                      Recibo
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEdit(award)}
+                      className="h-8 w-8 text-stone-400 hover:text-stone-100 hover:bg-stone-800 rounded-lg"
+                      title="Editar"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(award.id, award.employee.name)}
+                      disabled={deletingId === award.id}
+                      className="h-8 w-8 text-stone-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }

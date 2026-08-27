@@ -26,17 +26,17 @@ import { upsertMealVoucher, MealVoucherInput } from "@/application/meal-voucher/
 import { getEmployees } from "@/application/employee/employee-actions";
 import { MealVoucherData } from "./meal-voucher-table";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Utensils, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 const mealVoucherSchema = z.object({
   id: z.string().optional(),
-  employeeId: z.string().min(1, "Selecione um colaborador"),
+  employeeId: z.string().min(1, "Selecione o colaborador"),
   referenceMonth: z.string().min(1, "Mês de referência obrigatório"),
   unitValue: z.coerce.number().min(0, "Valor unitário não pode ser negativo"),
-  workedDays: z.coerce.number().min(0, "Dias trabalhados não pode ser negativo"),
-  voucherCount: z.coerce.number().min(0, "Quantidade de vales não pode ser negativa"),
-  totalValue: z.coerce.number().min(0, "Valor total não pode ser negativo"),
+  workedDays: z.coerce.number().min(1, "Informe os dias trabalhados"),
+  voucherCount: z.coerce.number().min(0),
+  totalValue: z.coerce.number().min(0),
   discounts: z.coerce.number().optional().nullable(),
 });
 
@@ -88,10 +88,9 @@ export function MealVoucherDialog({
     },
   });
 
-  const watchedUnitValue = watch("unitValue");
-  const watchedWorkedDays = watch("workedDays");
+  const watchedUnitValue = watch("unitValue") || 0;
+  const watchedWorkedDays = watch("workedDays") || 0;
   const watchedDiscounts = watch("discounts") || 0;
-  const watchedTotal = watch("totalValue");
 
   React.useEffect(() => {
     async function loadEmployees() {
@@ -104,6 +103,13 @@ export function MealVoucherDialog({
       loadEmployees();
     }
   }, [isOpen]);
+
+  // Recálculo automático transparente
+  const syncTotals = React.useCallback((days: number, unit: number) => {
+    const total = Number((days * unit).toFixed(2));
+    setValue("voucherCount", days);
+    setValue("totalValue", total);
+  }, [setValue]);
 
   React.useEffect(() => {
     if (voucherToEdit) {
@@ -131,12 +137,6 @@ export function MealVoucherDialog({
     }
   }, [voucherToEdit, reset, defaultRefDate, isOpen]);
 
-  const handleCalculateTotal = () => {
-    const total = Number(watchedUnitValue || 0) * Number(watchedWorkedDays || 0);
-    setValue("voucherCount", Number(watchedWorkedDays || 0));
-    setValue("totalValue", Number(total.toFixed(2)));
-  };
-
   const onSubmit = async (data: MealVoucherFormData) => {
     setIsLoading(true);
     try {
@@ -146,14 +146,14 @@ export function MealVoucherDialog({
         referenceMonth: data.referenceMonth,
         unitValue: Number(data.unitValue),
         workedDays: Number(data.workedDays),
-        voucherCount: Number(data.voucherCount),
-        totalValue: Number(data.totalValue),
+        voucherCount: Number(data.voucherCount || data.workedDays),
+        totalValue: Number(data.totalValue || data.unitValue * data.workedDays),
         discounts: data.discounts ? Number(data.discounts) : 0,
       };
 
       const res = await upsertMealVoucher(payload);
       if (res.success) {
-        toast.success(data.id ? "Vale Alimentação atualizado!" : "Vale Alimentação cadastrado!");
+        toast.success(data.id ? "Vale Alimentação atualizado!" : "Vale Alimentação cadastrado com sucesso!");
         onSuccess();
         onClose();
       } else {
@@ -167,28 +167,36 @@ export function MealVoucherDialog({
     }
   };
 
-  const netValue = (watchedTotal || 0) - (watchedDiscounts || 0);
+  const calculatedGross = watchedWorkedDays * watchedUnitValue;
+  const calculatedNet = calculatedGross - watchedDiscounts;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-stone-900 border-stone-800 text-stone-100">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-stone-100">
-            {voucherToEdit ? "Editar Vale Alimentação" : "Novo Vale Alimentação"}
-          </DialogTitle>
-          <DialogDescription className="text-stone-400">
-            Lançamento de Vale Alimentação / Refeição para o colaborador.
-          </DialogDescription>
+      <DialogContent className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl">
+        <DialogHeader className="pb-3 border-b border-stone-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Utensils className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-bold text-stone-100">
+                {voucherToEdit ? "Editar Vale Alimentação" : "Novo Vale Alimentação"}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-stone-400">
+                Informe a diária e a quantidade de dias para emissão do recibo.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label className="text-stone-300">Colaborador *</Label>
+            <Label className="text-xs font-semibold text-stone-300">Colaborador *</Label>
             <Select
               value={watch("employeeId")}
               onValueChange={(val) => setValue("employeeId", val)}
             >
-              <SelectTrigger className="bg-stone-950/60 border-stone-800 text-stone-100">
+              <SelectTrigger className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl">
                 <SelectValue placeholder="Selecione o colaborador" />
               </SelectTrigger>
               <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
@@ -205,98 +213,107 @@ export function MealVoucherDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-stone-300">Data de Referência (Mês/Ano) *</Label>
+            <Label className="text-xs font-semibold text-stone-300">Mês de Referência *</Label>
             <Input
               type="date"
               {...register("referenceMonth")}
-              className="bg-stone-950/60 border-stone-800 text-stone-100"
+              className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl"
             />
-            {errors.referenceMonth && (
-              <p className="text-xs text-red-400">{errors.referenceMonth.message}</p>
-            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-stone-300">Valor Unitário Diário (R$)</Label>
+          <div className="rounded-xl border border-stone-800/80 bg-stone-900/40 p-4 space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Valores e Diárias
+            </span>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-stone-400">Dias Trabalhados</Label>
+                <Input
+                  type="number"
+                  {...register("workedDays", {
+                    onChange: (e) => {
+                      const days = parseInt(e.target.value, 10) || 0;
+                      syncTotals(days, watchedUnitValue);
+                    },
+                  })}
+                  className="bg-stone-950 border-stone-700 text-stone-100 h-9 font-semibold text-center rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs text-stone-400">Valor da Diária (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...register("unitValue", {
+                    onChange: (e) => {
+                      const unit = parseFloat(e.target.value) || 0;
+                      syncTotals(watchedWorkedDays, unit);
+                    },
+                  })}
+                  className="bg-stone-950 border-stone-700 text-stone-100 h-9 font-semibold text-center rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1 pt-1">
+              <Label className="text-xs text-stone-400">Descontos / Coparticipação em Folha (R$)</Label>
               <Input
                 type="number"
                 step="0.01"
-                {...register("unitValue", {
-                  onChange: handleCalculateTotal,
-                })}
-                className="bg-stone-950/60 border-stone-800 text-stone-100"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-stone-300">Dias Trabalhados</Label>
-              <Input
-                type="number"
-                {...register("workedDays", {
-                  onChange: handleCalculateTotal,
-                })}
-                className="bg-stone-950/60 border-stone-800 text-stone-100"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-stone-300">Qtd. de Vales / Diárias</Label>
-              <Input
-                type="number"
-                {...register("voucherCount")}
-                className="bg-stone-950/60 border-stone-800 text-stone-100"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-stone-300">Descontos / Coparticipação (R$)</Label>
-              <Input
-                type="number"
-                step="0.01"
+                placeholder="0,00"
                 {...register("discounts")}
-                className="bg-stone-950/60 border-stone-800 text-stone-100"
+                className="bg-stone-950 border-stone-700 text-stone-100 h-9 text-xs rounded-lg"
               />
             </div>
           </div>
 
-          <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20 flex items-center justify-between">
+          {/* Destaque do Valor Líquido */}
+          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-4 flex items-center justify-between">
             <div>
-              <span className="text-xs text-stone-400 block">Total Bruto</span>
-              <span className="text-sm font-semibold text-stone-200">{formatCurrency(watchedTotal)}</span>
+              <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider block">
+                Total Bruto ({watchedWorkedDays} dias)
+              </span>
+              <span className="text-sm font-semibold text-stone-200">
+                {formatCurrency(calculatedGross)}
+              </span>
             </div>
             <div className="text-right">
-              <span className="text-xs text-emerald-400 font-medium block">Valor Líquido a Receber</span>
-              <span className="text-base font-bold text-emerald-400">{formatCurrency(netValue)}</span>
+              <span className="text-[11px] font-semibold text-emerald-400/80 uppercase tracking-wider block">
+                Líquido a Pagar
+              </span>
+              <span className="text-2xl font-black text-emerald-400">
+                {formatCurrency(calculatedNet)}
+              </span>
             </div>
           </div>
 
           <DialogFooter className="pt-3 border-t border-stone-800">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={onClose}
               disabled={isLoading}
-              className="border-stone-700 hover:bg-stone-800 text-stone-300"
+              className="text-stone-400 hover:text-stone-100 text-xs"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-emerald-500 text-stone-950 hover:bg-emerald-400 font-semibold"
+              className="bg-emerald-500 text-stone-950 hover:bg-emerald-400 font-bold px-5 rounded-xl shadow-md shadow-emerald-500/20"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   Salvando...
                 </>
               ) : voucherToEdit ? (
                 "Salvar Alterações"
               ) : (
-                "Cadastrar"
+                "Cadastrar Lançamento"
               )}
             </Button>
           </DialogFooter>
