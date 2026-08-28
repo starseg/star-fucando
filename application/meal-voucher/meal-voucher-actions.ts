@@ -162,3 +162,73 @@ export async function getMealVouchersForPrint(ids: string[]) {
     return { success: false, error: "Falha ao buscar vales para impressão." };
   }
 }
+
+export async function copyMealVouchers(
+  sourceMonth: number,
+  sourceYear: number,
+  targetMonth: number,
+  targetYear: number
+) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  if (sourceMonth === targetMonth && sourceYear === targetYear) {
+    return { success: false, error: "O mês de origem não pode ser igual ao mês de destino." };
+  }
+
+  try {
+    const srcStartDate = new Date(Date.UTC(sourceYear, sourceMonth - 1, 1));
+    const srcEndDate = new Date(Date.UTC(sourceYear, sourceMonth, 1));
+    const targetRefDate = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
+    const targetEndDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+
+    const sourceVouchers = await prisma.mealVoucher.findMany({
+      where: {
+        referenceMonth: {
+          gte: srcStartDate,
+          lt: srcEndDate,
+        },
+      },
+    });
+
+    if (sourceVouchers.length === 0) {
+      return {
+        success: false,
+        error: "Nenhum lançamento encontrado no mês de origem para copiar.",
+      };
+    }
+
+    const createdCount = await prisma.$transaction(async (tx) => {
+      await tx.mealVoucher.deleteMany({
+        where: {
+          referenceMonth: {
+            gte: targetRefDate,
+            lt: targetEndDate,
+          },
+        },
+      });
+
+      for (const v of sourceVouchers) {
+        await tx.mealVoucher.create({
+          data: {
+            employeeId: v.employeeId,
+            referenceMonth: targetRefDate,
+            unitValue: v.unitValue,
+            workedDays: v.workedDays,
+            voucherCount: v.voucherCount,
+            totalValue: v.totalValue,
+            discounts: v.discounts,
+          },
+        });
+      }
+
+      return sourceVouchers.length;
+    });
+
+    revalidatePath("/vale-alimentacao");
+    return { success: true, count: createdCount };
+  } catch (error) {
+    console.error("Erro ao copiar vales alimentação:", error);
+    return { success: false, error: "Falha ao copiar vales alimentação do mês anterior." };
+  }
+}

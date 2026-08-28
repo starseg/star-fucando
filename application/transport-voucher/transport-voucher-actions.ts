@@ -230,3 +230,100 @@ export async function getTransportVouchersForPrint(ids: string[]) {
     return { success: false, error: "Falha ao buscar vales para impressão." };
   }
 }
+
+export async function copyTransportVouchers(
+  sourceMonth: number,
+  sourceYear: number,
+  targetMonth: number,
+  targetYear: number
+) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  if (sourceMonth === targetMonth && sourceYear === targetYear) {
+    return { success: false, error: "O mês de origem não pode ser igual ao mês de destino." };
+  }
+
+  try {
+    const srcStartDate = new Date(Date.UTC(sourceYear, sourceMonth - 1, 1));
+    const srcEndDate = new Date(Date.UTC(sourceYear, sourceMonth, 1));
+    const targetRefDate = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
+    const targetEndDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+
+    const sourceVouchers = await prisma.transportVoucher.findMany({
+      where: {
+        referenceMonth: {
+          gte: srcStartDate,
+          lt: srcEndDate,
+        },
+      },
+      include: {
+        modals: true,
+      },
+    });
+
+    if (sourceVouchers.length === 0) {
+      return {
+        success: false,
+        error: "Nenhum lançamento encontrado no mês de origem para copiar.",
+      };
+    }
+
+    const createdCount = await prisma.$transaction(async (tx) => {
+      const existing = await tx.transportVoucher.findMany({
+        where: {
+          referenceMonth: {
+            gte: targetRefDate,
+            lt: targetEndDate,
+          },
+        },
+        select: { id: true },
+      });
+
+      const existingIds = existing.map((e) => e.id);
+      if (existingIds.length > 0) {
+        await tx.transportModal.deleteMany({
+          where: { transportVoucherId: { in: existingIds } },
+        });
+        await tx.transportVoucher.deleteMany({
+          where: { id: { in: existingIds } },
+        });
+      }
+
+      for (const v of sourceVouchers) {
+        await tx.transportVoucher.create({
+          data: {
+            employeeId: v.employeeId,
+            referenceMonth: targetRefDate,
+            inboundValue: v.inboundValue,
+            outboundValue: v.outboundValue,
+            weekendHolidayValue: v.weekendHolidayValue,
+            workingDays: v.workingDays,
+            weekendHolidayDays: v.weekendHolidayDays,
+            nightJokerIndicator: v.nightJokerIndicator,
+            totalVouchers: v.totalVouchers,
+            totalValue: v.totalValue,
+            discountPercentage: v.discountPercentage,
+            observations: v.observations,
+            modals: {
+              create: v.modals.map((m) => ({
+                name: m.name,
+                unitValue: m.unitValue,
+                quantity: m.quantity,
+                subtotal: m.subtotal,
+              })),
+            },
+          },
+        });
+      }
+
+      return sourceVouchers.length;
+    });
+
+    revalidatePath("/vale-transporte");
+    return { success: true, count: createdCount };
+  } catch (error) {
+    console.error("Erro ao copiar vales transporte:", error);
+    return { success: false, error: "Falha ao copiar vales transporte do mês anterior." };
+  }
+}

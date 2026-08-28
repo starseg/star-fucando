@@ -53,6 +53,7 @@ interface TransportVoucherTableProps {
   onEdit: (voucher: TransportVoucherData) => void;
   onRefresh: () => void;
   onPrint: (ids: string[]) => void;
+  onCopyPreviousMonth?: () => void;
 }
 
 export function TransportVoucherTable({
@@ -63,6 +64,7 @@ export function TransportVoucherTable({
   onEdit,
   onRefresh,
   onPrint,
+  onCopyPreviousMonth,
 }: TransportVoucherTableProps) {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
@@ -97,8 +99,16 @@ export function TransportVoucherTable({
         </div>
         <h3 className="text-base font-bold text-stone-200">Nenhum lançamento encontrado</h3>
         <p className="mt-1 text-xs text-stone-400 max-w-sm">
-          Clique no botão "Novo Lançamento" para cadastrar os vales transporte deste mês.
+          Você pode cadastrar um novo lançamento ou copiar os dados do mês anterior com 1 clique.
         </p>
+        {onCopyPreviousMonth && (
+          <Button
+            onClick={onCopyPreviousMonth}
+            className="mt-4 bg-amber-500 text-stone-950 hover:bg-amber-400 font-bold shadow-md shadow-amber-500/20 rounded-xl h-9 px-4 text-xs"
+          >
+            Copiar Lançamentos do Mês Anterior
+          </Button>
+        )}
       </div>
     );
   }

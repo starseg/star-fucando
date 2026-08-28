@@ -43,6 +43,7 @@ interface MealVoucherTableProps {
   onEdit: (voucher: MealVoucherData) => void;
   onRefresh: () => void;
   onPrint: (ids: string[]) => void;
+  onCopyPreviousMonth?: () => void;
 }
 
 export function MealVoucherTable({
@@ -53,6 +54,7 @@ export function MealVoucherTable({
   onEdit,
   onRefresh,
   onPrint,
+  onCopyPreviousMonth,
 }: MealVoucherTableProps) {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
@@ -87,8 +89,16 @@ export function MealVoucherTable({
         </div>
         <h3 className="text-base font-bold text-stone-200">Nenhum lançamento encontrado</h3>
         <p className="mt-1 text-xs text-stone-400 max-w-sm">
-          Clique no botão "Novo Lançamento" para cadastrar os vales alimentação deste mês.
+          Você pode cadastrar um novo lançamento ou copiar os dados do mês anterior com 1 clique.
         </p>
+        {onCopyPreviousMonth && (
+          <Button
+            onClick={onCopyPreviousMonth}
+            className="mt-4 bg-emerald-500 text-stone-950 hover:bg-emerald-400 font-bold shadow-md shadow-emerald-500/20 rounded-xl h-9 px-4 text-xs"
+          >
+            Copiar Lançamentos do Mês Anterior
+          </Button>
+        )}
       </div>
     );
   }

@@ -3,12 +3,16 @@
 import * as React from "react";
 import { MealVoucherTable, MealVoucherData } from "./components/meal-voucher-table";
 import { MealVoucherDialog } from "./components/meal-voucher-dialog";
+import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
 import { MonthNavigator } from "@/presentation/shared/month-navigator";
 import { StatsCard } from "@/presentation/shared/stats-card";
 import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
 import { Button } from "@/components/ui/button";
-import { Utensils, Plus, Users, DollarSign, CalendarCheck, RefreshCw } from "lucide-react";
-import { getMealVouchers } from "@/application/meal-voucher/meal-voucher-actions";
+import { Utensils, Plus, Users, DollarSign, CalendarCheck, RefreshCw, Copy } from "lucide-react";
+import {
+  getMealVouchers,
+  copyMealVouchers,
+} from "@/application/meal-voucher/meal-voucher-actions";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -20,6 +24,7 @@ export function MealVoucherView() {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
   const [voucherToEdit, setVoucherToEdit] = React.useState<MealVoucherData | null>(null);
 
   const fetchVouchers = React.useCallback(async () => {
@@ -115,6 +120,16 @@ export function MealVoucherView() {
           />
 
           <Button
+            variant="outline"
+            onClick={() => setIsCopyDialogOpen(true)}
+            className="border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl h-10 px-3.5 text-xs shadow-sm"
+            title="Copiar todos os lançamentos do mês anterior"
+          >
+            <Copy className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+            Copiar Mês Anterior
+          </Button>
+
+          <Button
             onClick={handleOpenCreate}
             className="bg-emerald-500 text-stone-950 hover:bg-emerald-400 font-bold shadow-md shadow-emerald-500/20 rounded-xl h-10 px-4"
           >
@@ -164,6 +179,7 @@ export function MealVoucherView() {
           onEdit={handleOpenEdit}
           onRefresh={fetchVouchers}
           onPrint={handlePrint}
+          onCopyPreviousMonth={() => setIsCopyDialogOpen(true)}
         />
       )}
 
@@ -175,6 +191,18 @@ export function MealVoucherView() {
         voucherToEdit={voucherToEdit}
         defaultMonth={selectedMonth}
         defaultYear={selectedYear}
+      />
+
+      {/* Diálogo de Cópia do Mês Anterior */}
+      <CopyPreviousMonthDialog
+        isOpen={isCopyDialogOpen}
+        onClose={() => setIsCopyDialogOpen(false)}
+        onSuccess={fetchVouchers}
+        targetMonth={selectedMonth}
+        targetYear={selectedYear}
+        benefitTitle="Vale Alimentação"
+        accentColor="emerald"
+        onCopy={copyMealVouchers}
       />
 
       {/* Barra Flutuante de Ação em Lote */}

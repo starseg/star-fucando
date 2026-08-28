@@ -144,3 +144,69 @@ export async function getAttendanceAwardsForPrint(ids: string[]) {
     return { success: false, error: "Falha ao buscar prêmios para impressão." };
   }
 }
+
+export async function copyAttendanceAwards(
+  sourceMonth: number,
+  sourceYear: number,
+  targetMonth: number,
+  targetYear: number
+) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  if (sourceMonth === targetMonth && sourceYear === targetYear) {
+    return { success: false, error: "O mês de origem não pode ser igual ao mês de destino." };
+  }
+
+  try {
+    const srcStartDate = new Date(Date.UTC(sourceYear, sourceMonth - 1, 1));
+    const srcEndDate = new Date(Date.UTC(sourceYear, sourceMonth, 1));
+    const targetRefDate = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
+    const targetEndDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+
+    const sourceAwards = await prisma.attendanceAward.findMany({
+      where: {
+        referenceMonth: {
+          gte: srcStartDate,
+          lt: srcEndDate,
+        },
+      },
+    });
+
+    if (sourceAwards.length === 0) {
+      return {
+        success: false,
+        error: "Nenhum lançamento encontrado no mês de origem para copiar.",
+      };
+    }
+
+    const createdCount = await prisma.$transaction(async (tx) => {
+      await tx.attendanceAward.deleteMany({
+        where: {
+          referenceMonth: {
+            gte: targetRefDate,
+            lt: targetEndDate,
+          },
+        },
+      });
+
+      for (const a of sourceAwards) {
+        await tx.attendanceAward.create({
+          data: {
+            employeeId: a.employeeId,
+            referenceMonth: targetRefDate,
+            bonusValue: a.bonusValue,
+          },
+        });
+      }
+
+      return sourceAwards.length;
+    });
+
+    revalidatePath("/assiduidade");
+    return { success: true, count: createdCount };
+  } catch (error) {
+    console.error("Erro ao copiar prêmios de assiduidade:", error);
+    return { success: false, error: "Falha ao copiar prêmios de assiduidade do mês anterior." };
+  }
+}

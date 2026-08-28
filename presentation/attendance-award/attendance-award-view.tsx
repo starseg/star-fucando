@@ -3,12 +3,16 @@
 import * as React from "react";
 import { AttendanceAwardTable, AttendanceAwardData } from "./components/attendance-award-table";
 import { AttendanceAwardDialog } from "./components/attendance-award-dialog";
+import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
 import { MonthNavigator } from "@/presentation/shared/month-navigator";
 import { StatsCard } from "@/presentation/shared/stats-card";
 import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
 import { Button } from "@/components/ui/button";
-import { Award, Plus, Users, DollarSign, Trophy, RefreshCw } from "lucide-react";
-import { getAttendanceAwards } from "@/application/attendance-award/attendance-award-actions";
+import { Award, Plus, Users, DollarSign, Trophy, RefreshCw, Copy } from "lucide-react";
+import {
+  getAttendanceAwards,
+  copyAttendanceAwards,
+} from "@/application/attendance-award/attendance-award-actions";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -20,6 +24,7 @@ export function AttendanceAwardView() {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
   const [awardToEdit, setAwardToEdit] = React.useState<AttendanceAwardData | null>(null);
 
   const fetchAwards = React.useCallback(async () => {
@@ -115,6 +120,16 @@ export function AttendanceAwardView() {
           />
 
           <Button
+            variant="outline"
+            onClick={() => setIsCopyDialogOpen(true)}
+            className="border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl h-10 px-3.5 text-xs shadow-sm"
+            title="Copiar todas as premiações do mês anterior"
+          >
+            <Copy className="mr-1.5 h-3.5 w-3.5 text-sky-400" />
+            Copiar Mês Anterior
+          </Button>
+
+          <Button
             onClick={handleOpenCreate}
             className="bg-sky-500 text-stone-950 hover:bg-sky-400 font-bold shadow-md shadow-sky-500/20 rounded-xl h-10 px-4"
           >
@@ -164,6 +179,7 @@ export function AttendanceAwardView() {
           onEdit={handleOpenEdit}
           onRefresh={fetchAwards}
           onPrint={handlePrint}
+          onCopyPreviousMonth={() => setIsCopyDialogOpen(true)}
         />
       )}
 
@@ -175,6 +191,18 @@ export function AttendanceAwardView() {
         awardToEdit={awardToEdit}
         defaultMonth={selectedMonth}
         defaultYear={selectedYear}
+      />
+
+      {/* Diálogo de Cópia do Mês Anterior */}
+      <CopyPreviousMonthDialog
+        isOpen={isCopyDialogOpen}
+        onClose={() => setIsCopyDialogOpen(false)}
+        onSuccess={fetchAwards}
+        targetMonth={selectedMonth}
+        targetYear={selectedYear}
+        benefitTitle="Prêmio de Assiduidade"
+        accentColor="sky"
+        onCopy={copyAttendanceAwards}
       />
 
       {/* Barra Flutuante de Ação em Lote */}

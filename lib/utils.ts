@@ -6,6 +6,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export const MONTH_NAMES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
 export function formatCurrency(value: number | string | null | undefined): string {
   if (value === null || value === undefined || value === "") return "R$ 0,00";
   const num = typeof value === "string" ? parseFloat(value) : Number(value);

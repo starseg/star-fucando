@@ -3,12 +3,16 @@
 import * as React from "react";
 import { TransportVoucherTable, TransportVoucherData } from "./components/transport-voucher-table";
 import { TransportVoucherDialog } from "./components/transport-voucher-dialog";
+import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
 import { MonthNavigator } from "@/presentation/shared/month-navigator";
 import { StatsCard } from "@/presentation/shared/stats-card";
 import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
 import { Button } from "@/components/ui/button";
-import { Bus, Plus, Users, Ticket, DollarSign, RefreshCw } from "lucide-react";
-import { getTransportVouchers } from "@/application/transport-voucher/transport-voucher-actions";
+import { Bus, Plus, Users, Ticket, DollarSign, RefreshCw, Copy } from "lucide-react";
+import {
+  getTransportVouchers,
+  copyTransportVouchers,
+} from "@/application/transport-voucher/transport-voucher-actions";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -20,6 +24,7 @@ export function TransportVoucherView() {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
   const [voucherToEdit, setVoucherToEdit] = React.useState<TransportVoucherData | null>(null);
 
   const fetchVouchers = React.useCallback(async () => {
@@ -115,6 +120,16 @@ export function TransportVoucherView() {
           />
 
           <Button
+            variant="outline"
+            onClick={() => setIsCopyDialogOpen(true)}
+            className="border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl h-10 px-3.5 text-xs shadow-sm"
+            title="Copiar todos os lançamentos do mês anterior"
+          >
+            <Copy className="mr-1.5 h-3.5 w-3.5 text-amber-400" />
+            Copiar Mês Anterior
+          </Button>
+
+          <Button
             onClick={handleOpenCreate}
             className="bg-amber-500 text-stone-950 hover:bg-amber-400 font-bold shadow-md shadow-amber-500/20 rounded-xl h-10 px-4"
           >
@@ -164,6 +179,7 @@ export function TransportVoucherView() {
           onEdit={handleOpenEdit}
           onRefresh={fetchVouchers}
           onPrint={handlePrint}
+          onCopyPreviousMonth={() => setIsCopyDialogOpen(true)}
         />
       )}
 
@@ -175,6 +191,18 @@ export function TransportVoucherView() {
         voucherToEdit={voucherToEdit}
         defaultMonth={selectedMonth}
         defaultYear={selectedYear}
+      />
+
+      {/* Diálogo de Cópia do Mês Anterior */}
+      <CopyPreviousMonthDialog
+        isOpen={isCopyDialogOpen}
+        onClose={() => setIsCopyDialogOpen(false)}
+        onSuccess={fetchVouchers}
+        targetMonth={selectedMonth}
+        targetYear={selectedYear}
+        benefitTitle="Vale Transporte"
+        accentColor="amber"
+        onCopy={copyTransportVouchers}
       />
 
       {/* Barra Flutuante de Ação em Lote */}
