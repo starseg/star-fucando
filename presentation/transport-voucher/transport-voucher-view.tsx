@@ -76,6 +76,15 @@ export function TransportVoucherView() {
     window.open(url, "_blank");
   };
 
+  const handlePrintAccounting = (ids: string[]) => {
+    if (ids.length === 0) {
+      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      return;
+    }
+    const url = `/imprimir-contabilidade?tipo=transporte&ids=${ids.join(",")}&mes=${selectedMonth}&ano=${selectedYear}`;
+    window.open(url, "_blank");
+  };
+
   const totalValueSum = vouchers.reduce((acc, v) => acc + Number(v.totalValue), 0);
   const totalVouchersCount = vouchers.reduce((acc, v) => acc + Number(v.totalVouchers), 0);
 
@@ -173,6 +182,7 @@ export function TransportVoucherView() {
         selectedCount={selectedIds.length}
         totalCount={vouchers.length}
         onPrint={() => handlePrint(selectedIds)}
+        onPrintAccounting={() => handlePrintAccounting(selectedIds)}
         onClear={() => setSelectedIds([])}
         benefitType="Vale Transporte"
       />

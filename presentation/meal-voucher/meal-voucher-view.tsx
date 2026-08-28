@@ -76,6 +76,15 @@ export function MealVoucherView() {
     window.open(url, "_blank");
   };
 
+  const handlePrintAccounting = (ids: string[]) => {
+    if (ids.length === 0) {
+      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      return;
+    }
+    const url = `/imprimir-contabilidade?tipo=alimentacao&ids=${ids.join(",")}&mes=${selectedMonth}&ano=${selectedYear}`;
+    window.open(url, "_blank");
+  };
+
   const totalNetSum = vouchers.reduce((acc, v) => acc + Number(v.netValue), 0);
   const totalDaysSum = vouchers.reduce((acc, v) => acc + Number(v.workedDays), 0);
 
@@ -173,6 +182,7 @@ export function MealVoucherView() {
         selectedCount={selectedIds.length}
         totalCount={vouchers.length}
         onPrint={() => handlePrint(selectedIds)}
+        onPrintAccounting={() => handlePrintAccounting(selectedIds)}
         onClear={() => setSelectedIds([])}
         benefitType="Vale Alimentação"
       />
