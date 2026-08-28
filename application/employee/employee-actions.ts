@@ -6,6 +6,7 @@ import { requireApprovedUser } from "@/application/auth/auth-guard";
 
 export interface EmployeeInput {
   name: string;
+  pix: string;
   department?: string | null;
   role?: string | null;
   admissionDate?: string | null;
@@ -20,6 +21,7 @@ export async function getEmployees(search?: string) {
       ? {
           OR: [
             { name: { contains: search, mode: "insensitive" as const } },
+            { pix: { contains: search, mode: "insensitive" as const } },
             { department: { contains: search, mode: "insensitive" as const } },
             { role: { contains: search, mode: "insensitive" as const } },
           ],
@@ -72,9 +74,14 @@ export async function createEmployee(input: EmployeeInput) {
       return { success: false, error: "O nome do colaborador é obrigatório." };
     }
 
+    if (!input.pix || input.pix.trim() === "") {
+      return { success: false, error: "A chave PIX do colaborador é obrigatória." };
+    }
+
     const employee = await prisma.employee.create({
       data: {
         name: input.name.trim(),
+        pix: input.pix.trim(),
         department: input.department?.trim() || null,
         role: input.role?.trim() || null,
         admissionDate: input.admissionDate ? new Date(input.admissionDate) : null,
@@ -98,10 +105,15 @@ export async function updateEmployee(id: string, input: EmployeeInput) {
       return { success: false, error: "O nome do colaborador é obrigatório." };
     }
 
+    if (!input.pix || input.pix.trim() === "") {
+      return { success: false, error: "A chave PIX do colaborador é obrigatória." };
+    }
+
     const employee = await prisma.employee.update({
       where: { id },
       data: {
         name: input.name.trim(),
+        pix: input.pix.trim(),
         department: input.department?.trim() || null,
         role: input.role?.trim() || null,
         admissionDate: input.admissionDate ? new Date(input.admissionDate) : null,
