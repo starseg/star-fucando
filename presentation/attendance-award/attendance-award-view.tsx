@@ -76,6 +76,15 @@ export function AttendanceAwardView() {
     window.open(url, "_blank");
   };
 
+  const handlePrintAccounting = (ids: string[]) => {
+    if (ids.length === 0) {
+      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      return;
+    }
+    const url = `/imprimir-contabilidade?tipo=assiduidade&ids=${ids.join(",")}&mes=${selectedMonth}&ano=${selectedYear}`;
+    window.open(url, "_blank");
+  };
+
   const totalBonusSum = awards.reduce((acc, a) => acc + Number(a.bonusValue), 0);
   const averageBonus = awards.length > 0 ? totalBonusSum / awards.length : 0;
 
@@ -173,6 +182,7 @@ export function AttendanceAwardView() {
         selectedCount={selectedIds.length}
         totalCount={awards.length}
         onPrint={() => handlePrint(selectedIds)}
+        onPrintAccounting={() => handlePrintAccounting(selectedIds)}
         onClear={() => setSelectedIds([])}
         benefitType="Prêmio de Assiduidade"
       />
