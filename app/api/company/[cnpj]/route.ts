@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCompanyByCnpj } from "@/application/company/get-company-by-cnpj";
 import { CompanyError } from "@/domain/company/errors/company-errors";
+import { auth } from "@/auth";
 
 const statusByCode = {
   invalid_cnpj: 400,
@@ -10,6 +11,11 @@ const statusByCode = {
 };
 
 export async function GET(_: Request, context: { params: Promise<{ cnpj: string }> }) {
+  const session = await auth();
+  if (!session?.user || session.user.status !== "APPROVED") {
+    return NextResponse.json({ error: "Acesso não autorizado." }, { status: 401 });
+  }
+
   try {
     const { cnpj } = await context.params;
     const data = await getCompanyByCnpj(cnpj);

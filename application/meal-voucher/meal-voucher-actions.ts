@@ -2,6 +2,7 @@
 
 import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
+import { requireApprovedUser } from "@/application/auth/auth-guard";
 
 export interface MealVoucherInput {
   id?: string;
@@ -15,6 +16,9 @@ export interface MealVoucherInput {
 }
 
 export async function getMealVouchers(month: number, year: number) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const startDate = new Date(Date.UTC(year, month - 1, 1));
     const endDate = new Date(Date.UTC(year, month, 1));
@@ -53,6 +57,9 @@ export async function getMealVouchers(month: number, year: number) {
 }
 
 export async function upsertMealVoucher(input: MealVoucherInput) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     if (!input.employeeId) {
       return { success: false, error: "Colaborador é obrigatório." };
@@ -108,6 +115,9 @@ export async function upsertMealVoucher(input: MealVoucherInput) {
 }
 
 export async function deleteMealVoucher(id: string) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     await prisma.mealVoucher.delete({ where: { id } });
     revalidatePath("/vale-alimentacao");
@@ -119,6 +129,9 @@ export async function deleteMealVoucher(id: string) {
 }
 
 export async function getMealVouchersForPrint(ids: string[]) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const vouchers = await prisma.mealVoucher.findMany({
       where: {

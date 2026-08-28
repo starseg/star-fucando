@@ -2,6 +2,7 @@
 
 import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
+import { requireApprovedUser } from "@/application/auth/auth-guard";
 
 export interface AttendanceAwardInput {
   id?: string;
@@ -11,6 +12,9 @@ export interface AttendanceAwardInput {
 }
 
 export async function getAttendanceAwards(month: number, year: number) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const startDate = new Date(Date.UTC(year, month - 1, 1));
     const endDate = new Date(Date.UTC(year, month, 1));
@@ -46,6 +50,9 @@ export async function getAttendanceAwards(month: number, year: number) {
 }
 
 export async function upsertAttendanceAward(input: AttendanceAwardInput) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     if (!input.employeeId) {
       return { success: false, error: "Colaborador é obrigatório." };
@@ -93,6 +100,9 @@ export async function upsertAttendanceAward(input: AttendanceAwardInput) {
 }
 
 export async function deleteAttendanceAward(id: string) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     await prisma.attendanceAward.delete({ where: { id } });
     revalidatePath("/assiduidade");
@@ -104,6 +114,9 @@ export async function deleteAttendanceAward(id: string) {
 }
 
 export async function getAttendanceAwardsForPrint(ids: string[]) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const awards = await prisma.attendanceAward.findMany({
       where: {

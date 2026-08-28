@@ -2,6 +2,7 @@
 
 import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
+import { requireApprovedUser } from "@/application/auth/auth-guard";
 
 export interface EmployeeInput {
   name: string;
@@ -11,6 +12,9 @@ export interface EmployeeInput {
 }
 
 export async function getEmployees(search?: string) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const where = search
       ? {
@@ -44,6 +48,9 @@ export async function getEmployees(search?: string) {
 }
 
 export async function getEmployeeById(id: string) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const employee = await prisma.employee.findUnique({
       where: { id },
@@ -57,6 +64,9 @@ export async function getEmployeeById(id: string) {
 }
 
 export async function createEmployee(input: EmployeeInput) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     if (!input.name || input.name.trim() === "") {
       return { success: false, error: "O nome do colaborador é obrigatório." };
@@ -80,6 +90,9 @@ export async function createEmployee(input: EmployeeInput) {
 }
 
 export async function updateEmployee(id: string, input: EmployeeInput) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     if (!input.name || input.name.trim() === "") {
       return { success: false, error: "O nome do colaborador é obrigatório." };
@@ -104,6 +117,9 @@ export async function updateEmployee(id: string, input: EmployeeInput) {
 }
 
 export async function deleteEmployee(id: string) {
+  const guard = await requireApprovedUser();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     // Excluir registros dependentes antes de excluir o colaborador
     await prisma.transportModal.deleteMany({
