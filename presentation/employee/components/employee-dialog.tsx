@@ -21,6 +21,7 @@ import { Loader2, UserPlus, UserCheck } from "lucide-react";
 
 const employeeSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+  pix: z.string().min(1, "A chave PIX é obrigatória"),
   department: z.string().optional(),
   role: z.string().optional(),
   admissionDate: z.string().optional(),
@@ -35,6 +36,7 @@ interface EmployeeDialogProps {
   employeeToEdit?: {
     id: string;
     name: string;
+    pix?: string | null;
     department?: string | null;
     role?: string | null;
     admissionDate?: Date | string | null;
@@ -58,6 +60,7 @@ export function EmployeeDialog({
     resolver: zodResolver(employeeSchema as any),
     defaultValues: {
       name: "",
+      pix: "",
       department: "",
       role: "",
       admissionDate: "",
@@ -71,6 +74,7 @@ export function EmployeeDialog({
         : "";
       reset({
         name: employeeToEdit.name,
+        pix: employeeToEdit.pix || "",
         department: employeeToEdit.department || "",
         role: employeeToEdit.role || "",
         admissionDate: formattedDate,
@@ -78,6 +82,7 @@ export function EmployeeDialog({
     } else {
       reset({
         name: "",
+        pix: "",
         department: "",
         role: "",
         admissionDate: "",
@@ -148,6 +153,19 @@ export function EmployeeDialog({
               className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl"
             />
             {errors.name && <p className="text-xs text-red-400">{errors.name.message}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="pix" className="text-xs font-semibold text-stone-300">
+              Chave PIX *
+            </Label>
+            <Input
+              id="pix"
+              placeholder="Ex: CPF, CNPJ, e-mail, celular ou chave aleatória"
+              {...register("pix")}
+              className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl"
+            />
+            {errors.pix && <p className="text-xs text-red-400">{errors.pix.message}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

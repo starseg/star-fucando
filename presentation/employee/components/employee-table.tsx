@@ -19,6 +19,7 @@ import { toast } from "sonner";
 export interface EmployeeData {
   id: string;
   name: string;
+  pix?: string | null;
   department: string | null;
   role: string | null;
   admissionDate: Date | string | null;
@@ -83,6 +84,9 @@ export function EmployeeTable({ employees, onEdit, onRefresh }: EmployeeTablePro
               Colaborador
             </TableHead>
             <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
+              Chave PIX
+            </TableHead>
+            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
               Departamento / Função
             </TableHead>
             <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
@@ -113,6 +117,11 @@ export function EmployeeTable({ employees, onEdit, onRefresh }: EmployeeTablePro
                     </span>
                   </div>
                 </div>
+              </TableCell>
+              <TableCell>
+                <span className="text-xs font-mono text-stone-300 bg-stone-900/80 border border-stone-800/80 px-2.5 py-1 rounded-md inline-block max-w-[200px] truncate" title={employee.pix || "Não informada"}>
+                  {employee.pix || "Não informada"}
+                </span>
               </TableCell>
               <TableCell>
                 <div className="space-y-0.5">
