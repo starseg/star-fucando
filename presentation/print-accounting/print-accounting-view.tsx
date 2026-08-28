@@ -152,18 +152,17 @@ export function PrintAccountingView() {
       : "";
 
   return (
-    <div className="min-h-screen bg-[#0d0c0a] text-stone-100 print:bg-white print:text-black">
+    <div className="min-h-screen bg-[#0d0c0a] text-stone-100">
       <style jsx global>{`
         @media print {
           @page {
             size: A4 portrait;
             margin: 12mm 10mm 12mm 10mm;
           }
-          body {
-            background-color: white !important;
-            color: #111827 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+          html, body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            background-color: #0d0c0a !important;
           }
           .no-print {
             display: none !important;
@@ -171,41 +170,6 @@ export function PrintAccountingView() {
           .print-container {
             padding: 0 !important;
             max-width: 100% !important;
-          }
-          .print-card {
-            border: 1px solid #e5e7eb !important;
-            background: #ffffff !important;
-            box-shadow: none !important;
-            color: #111827 !important;
-          }
-          .print-header {
-            border-bottom: 2px solid #e5e7eb !important;
-          }
-          .print-table th {
-            background-color: #f3f4f6 !important;
-            color: #374151 !important;
-            border-bottom: 1px solid #e5e7eb !important;
-          }
-          .print-table td {
-            border-bottom: 1px solid #f3f4f6 !important;
-            color: #1f2937 !important;
-          }
-          .print-subtext {
-            color: #4b5563 !important;
-          }
-          .print-badge {
-            background-color: #f3f4f6 !important;
-            border: 1px solid #d1d5db !important;
-            color: #111827 !important;
-          }
-          .print-pix {
-            background-color: #f3f4f6 !important;
-            border: 1px solid #d1d5db !important;
-            color: #111827 !important;
-          }
-          .print-accent {
-            color: #111827 !important;
-            font-weight: 800 !important;
           }
         }
       `}</style>
@@ -243,11 +207,11 @@ export function PrintAccountingView() {
 
       {/* Documento do Relatório */}
       <div className="print-container mx-auto max-w-5xl px-6 py-8">
-        <div className="print-card rounded-2xl border border-stone-800 bg-[#12100e] p-6 shadow-xl space-y-6">
+        <div className="rounded-2xl border border-stone-800 bg-[#12100e] p-6 shadow-xl space-y-6">
           {/* Cabeçalho do Relatório */}
-          <div className="print-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-stone-800/80">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-stone-800/80">
             <div className="flex items-center gap-3.5">
-              <div className={`print-badge flex h-11 w-11 items-center justify-center rounded-2xl border ${theme.badgeColor}`}>
+              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${theme.badgeColor}`}>
                 <Icon className="h-5 w-5" />
               </div>
               <div>
@@ -259,7 +223,7 @@ export function PrintAccountingView() {
                     Contabilidade
                   </span>
                 </div>
-                <p className="text-xs text-stone-400 print-subtext mt-0.5">
+                <p className="text-xs text-stone-400 mt-0.5">
                   STAR SEG • Relatório consolidado de pagamentos de benefícios com chave PIX
                 </p>
               </div>
@@ -267,8 +231,8 @@ export function PrintAccountingView() {
 
             <div className="flex items-center gap-4 text-right">
               {referenceDateFormatted && (
-                <div className="px-3.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/60 print:border-stone-300 print:bg-stone-100">
-                  <span className="text-[10px] uppercase font-bold text-stone-400 print-subtext block">
+                <div className="px-3.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/60">
+                  <span className="text-[10px] uppercase font-bold text-stone-400 block">
                     Competência
                   </span>
                   <span className="text-xs font-semibold text-stone-200 capitalize">
@@ -276,11 +240,11 @@ export function PrintAccountingView() {
                   </span>
                 </div>
               )}
-              <div className="px-3.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/60 print:border-stone-300 print:bg-stone-100">
-                <span className="text-[10px] uppercase font-bold text-stone-400 print-subtext block">
+              <div className="px-3.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/60">
+                <span className="text-[10px] uppercase font-bold text-stone-400 block">
                   Total Consolidado
                 </span>
-                <span className={`text-sm font-black ${theme.accentColor} print-accent`}>
+                <span className={`text-sm font-black ${theme.accentColor}`}>
                   {formatCurrency(totalValueSum)}
                 </span>
               </div>
@@ -289,7 +253,7 @@ export function PrintAccountingView() {
 
           {/* Tabela Formatada Fiel ao Modelo Visual */}
           <div className="overflow-hidden rounded-xl border border-stone-800/90 bg-[#12100e]/80">
-            <Table className="print-table">
+            <Table>
               <TableHeader className="bg-stone-950/90 border-b border-stone-800">
                 <TableRow className="border-none hover:bg-transparent">
                   <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider pl-4">
@@ -349,7 +313,7 @@ export function PrintAccountingView() {
                       <TableCell className="pl-4 py-3.5">
                         <div className="flex items-start gap-3">
                           <div
-                            className={`print-badge flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black border mt-0.5 ${theme.badgeColor}`}
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black border mt-0.5 ${theme.badgeColor}`}
                           >
                             {(emp.name || "?").charAt(0).toUpperCase()}
                           </div>
@@ -357,11 +321,11 @@ export function PrintAccountingView() {
                             <span className="font-bold text-stone-100 text-sm block">
                               {emp.name}
                             </span>
-                            <span className="text-xs text-stone-400 print-subtext block">
+                            <span className="text-xs text-stone-400 block">
                               {emp.department || "Operacional"} • {emp.role || "Colaborador"}
                             </span>
                             <div className="pt-0.5">
-                              <span className="print-pix inline-flex items-center gap-1 font-mono text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                              <span className="inline-flex items-center gap-1 font-mono text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
                                 <span className="font-sans font-semibold text-[10px] text-stone-400 uppercase">PIX:</span>
                                 {emp.pix ? emp.pix : "Não informado"}
                               </span>
@@ -378,7 +342,7 @@ export function PrintAccountingView() {
                               <span className="text-sm font-semibold text-stone-200 block">
                                 {item.workingDays} dias úteis
                               </span>
-                              <span className="text-xs text-stone-400 print-subtext">
+                              <span className="text-xs text-stone-400">
                                 {item.modals?.length > 2
                                   ? `${item.modals.length} modais cadastrados`
                                   : `Ida (${formatCurrency(item.inboundValue)}) + Volta (${formatCurrency(item.outboundValue)})`}
@@ -389,11 +353,11 @@ export function PrintAccountingView() {
                             {item.totalVouchers} un.
                           </TableCell>
                           <TableCell className="text-right pr-4 py-3.5">
-                            <span className="text-base font-black text-amber-400 print-accent block">
+                            <span className="text-base font-black text-amber-400 block">
                               {formatCurrency(item.totalValue)}
                             </span>
                             {item.discountPercentage ? (
-                              <span className="text-[10px] text-stone-400 print-subtext">
+                              <span className="text-[10px] text-stone-400">
                                 Desc. {item.discountPercentage}%
                               </span>
                             ) : null}
@@ -409,7 +373,7 @@ export function PrintAccountingView() {
                               <span className="text-sm font-semibold text-stone-200 block">
                                 {item.workedDays} {item.workedDays === 1 ? "dia" : "dias"}
                               </span>
-                              <span className="text-xs text-stone-400 print-subtext">
+                              <span className="text-xs text-stone-400">
                                 Diária de {formatCurrency(item.unitValue)}
                               </span>
                             </div>
@@ -425,7 +389,7 @@ export function PrintAccountingView() {
                             )}
                           </TableCell>
                           <TableCell className="text-right pr-4 py-3.5">
-                            <span className="text-base font-black text-emerald-400 print-accent block">
+                            <span className="text-base font-black text-emerald-400 block">
                               {formatCurrency(item.netValue)}
                             </span>
                           </TableCell>
@@ -439,7 +403,7 @@ export function PrintAccountingView() {
                             {formatMonthYear(item.referenceMonth)}
                           </TableCell>
                           <TableCell className="text-right pr-4 py-3.5">
-                            <span className="text-base font-black text-sky-400 print-accent block">
+                            <span className="text-base font-black text-sky-400 block">
                               {formatCurrency(item.bonusValue)}
                             </span>
                           </TableCell>
@@ -453,7 +417,7 @@ export function PrintAccountingView() {
           </div>
 
           {/* Rodapé Resumo */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-stone-400 print-subtext">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-stone-400">
             <span>
               Total de registros: <strong className="text-stone-200">{data.length} colaboradores</strong>
             </span>
