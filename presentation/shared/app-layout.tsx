@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,9 +12,14 @@ import {
   Search,
   Menu,
   X,
+  ShieldCheck,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useSession, signOut } from "next-auth/react";
+import { getPendingCount } from "@/application/user/user-actions";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -21,7 +27,23 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [pendingCount, setPendingCount] = React.useState(0);
+
+  const isAdmin = session?.user?.role === "ADMIN";
+  const user = session?.user;
+
+  // Busca contagem de pendências se for admin
+  React.useEffect(() => {
+    if (isAdmin) {
+      getPendingCount().then((res) => {
+        if (res.success && typeof res.count === "number") {
+          setPendingCount(res.count);
+        }
+      });
+    }
+  }, [isAdmin, pathname]);
 
   // Não renderiza sidebar na rota de impressão para não poluir
   const isPrintPage = pathname.startsWith("/imprimir");
@@ -59,6 +81,15 @@ export function AppLayout({ children }: AppLayoutProps) {
     },
   ];
 
+  if (isAdmin) {
+    navItems.push({
+      label: "Aprovações",
+      href: "/admin/aprovacoes",
+      icon: ShieldCheck,
+      badge: pendingCount > 0 ? `${pendingCount} pendente${pendingCount > 1 ? "s" : ""}` : "",
+    });
+  }
+
   return (
     <div className="flex min-h-screen bg-[#0c0a09] text-stone-100">
       {/* Sidebar Desktop */}
@@ -66,7 +97,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="flex h-16 items-center border-b border-stone-800 px-6">
           <div>
             <span className="font-bold tracking-tight text-stone-100 text-lg">Star Seg</span>
-            <span className="block text-[11px] font-medium text-amber-500 uppercase tracking-wider">Recibos & Benefícios</span>
+            <span className="block text-[11px] font-medium text-amber-500 uppercase tracking-wider">
+              Recibos & Benefícios
+            </span>
           </div>
         </div>
 
@@ -93,7 +126,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="rounded bg-stone-800 px-1.5 py-0.5 text-[10px] font-semibold text-stone-200">
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[10px] font-semibold",
+                      item.href === "/admin/aprovacoes" && pendingCount > 0
+                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold"
+                        : "bg-stone-800 text-stone-200"
+                    )}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -101,6 +141,48 @@ export function AppLayout({ children }: AppLayoutProps) {
             );
           })}
         </nav>
+
+        {/* Rodapé do Usuário Logado */}
+        {user && (
+          <div className="border-t border-stone-800 p-3 bg-stone-950/40">
+            <div className="flex items-center justify-between gap-2 rounded-xl p-2 bg-stone-900/50 border border-stone-800/60">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt={user.name || user.email || ""}
+                    width={32}
+                    height={32}
+                    unoptimized
+                    className="h-8 w-8 rounded-full border border-stone-700 object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-xs">
+                    {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="h-4 w-4" />}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-stone-200 truncate leading-tight">
+                    {user.name || "Usuário"}
+                  </p>
+                  <p className="text-[10px] text-stone-300 font-mono truncate leading-tight mt-0.5">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="h-7 w-7 text-stone-400 hover:text-rose-400 hover:bg-rose-500/10 shrink-0 cursor-pointer rounded-lg"
+                title="Sair da conta"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Main Content Area */}
@@ -143,9 +225,42 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <Icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </div>
+                  {item.badge && (
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[10px] font-semibold",
+                        item.href === "/admin/aprovacoes" && pendingCount > 0
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          : "bg-stone-800 text-stone-200"
+                      )}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
+
+            {user && (
+              <div className="border-t border-stone-800/80 pt-3 mt-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold">
+                    {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="h-3.5 w-3.5" />}
+                  </div>
+                  <span className="text-xs text-stone-300 truncate max-w-[180px]">
+                    {user.email}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="text-xs text-rose-400 hover:bg-rose-500/10 h-7 px-2"
+                >
+                  Sair
+                </Button>
+              </div>
+            )}
           </div>
         )}
 

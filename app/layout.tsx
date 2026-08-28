@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { AppLayout } from "@/presentation/shared/app-layout";
 import { Toaster } from "sonner";
+import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +15,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR" className="dark">
       <body className="antialiased selection:bg-amber-500 selection:text-stone-950">
-        <AppLayout>{children}</AppLayout>
+        <SessionProvider>
+          {children}
+        </SessionProvider>
         <Toaster richColors position="top-right" theme="dark" />
       </body>
     </html>
