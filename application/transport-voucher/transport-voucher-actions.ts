@@ -59,6 +59,8 @@ export async function getTransportVouchers(month: number, year: number) {
       success: true,
       data: vouchers.map((v) => ({
         ...v,
+        workingDays: Number(v.workingDays),
+        totalVouchers: Number(v.totalVouchers),
         inboundValue: Number(v.inboundValue),
         outboundValue: Number(v.outboundValue),
         weekendHolidayValue: v.weekendHolidayValue ? Number(v.weekendHolidayValue) : null,
@@ -66,6 +68,7 @@ export async function getTransportVouchers(month: number, year: number) {
         discountPercentage: v.discountPercentage ? Number(v.discountPercentage) : null,
         modals: v.modals.map((m) => ({
           ...m,
+          quantity: Number(m.quantity),
           unitValue: Number(m.unitValue),
           subtotal: Number(m.subtotal),
         })),
@@ -213,6 +216,8 @@ export async function getTransportVouchersForPrint(ids: string[]) {
       success: true,
       data: vouchers.map((v) => ({
         ...v,
+        workingDays: Number(v.workingDays),
+        totalVouchers: Number(v.totalVouchers),
         inboundValue: Number(v.inboundValue),
         outboundValue: Number(v.outboundValue),
         weekendHolidayValue: v.weekendHolidayValue ? Number(v.weekendHolidayValue) : null,
@@ -220,6 +225,7 @@ export async function getTransportVouchersForPrint(ids: string[]) {
         discountPercentage: v.discountPercentage ? Number(v.discountPercentage) : null,
         modals: v.modals.map((m) => ({
           ...m,
+          quantity: Number(m.quantity),
           unitValue: Number(m.unitValue),
           subtotal: Number(m.subtotal),
         })),
