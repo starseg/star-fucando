@@ -17,8 +17,8 @@ import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function TransportVoucherView() {
-  const [selectedMonth, setSelectedMonth] = React.useState<number>(4);
-  const [selectedYear, setSelectedYear] = React.useState<number>(2026);
+  const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
 
   const [vouchers, setVouchers] = React.useState<TransportVoucherData[]>([]);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);

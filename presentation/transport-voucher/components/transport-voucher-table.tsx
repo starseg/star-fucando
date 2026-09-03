@@ -9,6 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/utils";
@@ -67,13 +75,14 @@ export function TransportVoucherTable({
   onCopyPreviousMonth,
 }: TransportVoucherTableProps) {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  // TODO: migrar para o componente AlertDialog do shadcn/ui quando o MCP do shadcn voltar a funcionar.
+  const [voucherToDelete, setVoucherToDelete] = React.useState<TransportVoucherData | null>(null);
 
   const allSelected = vouchers.length > 0 && selectedIds.length === vouchers.length;
 
-  const handleDelete = async (id: string, employeeName: string) => {
-    if (!confirm(`Excluir o lançamento de Vale Transporte de "${employeeName}"?`)) {
-      return;
-    }
+  const handleConfirmDelete = async () => {
+    if (!voucherToDelete) return;
+    const id = voucherToDelete.id;
 
     setDeletingId(id);
     try {
@@ -88,6 +97,7 @@ export function TransportVoucherTable({
       toast.error("Erro inesperado.");
     } finally {
       setDeletingId(null);
+      setVoucherToDelete(null);
     }
   };
 
@@ -180,9 +190,11 @@ export function TransportVoucherTable({
                       {voucher.workingDays} dias úteis
                     </span>
                     <span className="text-xs text-stone-300">
-                      {voucher.modals.length > 2
-                        ? `${voucher.modals.length} modais cadastrados`
-                        : `Ida (${formatCurrency(voucher.inboundValue)}) + Volta (${formatCurrency(voucher.outboundValue)})`}
+                      {voucher.modals.length === 2 &&
+                      voucher.modals.some((m) => /ida/i.test(m.name)) &&
+                      voucher.modals.some((m) => /volta/i.test(m.name))
+                        ? `Ida (${formatCurrency(voucher.inboundValue)}) + Volta (${formatCurrency(voucher.outboundValue)})`
+                        : voucher.modals.map((m) => m.name).join(", ")}
                     </span>
                   </div>
                 </TableCell>
@@ -193,7 +205,7 @@ export function TransportVoucherTable({
                   <span className="text-base font-black text-amber-400 block">
                     {formatCurrency(voucher.totalValue)}
                   </span>
-                  {voucher.discountPercentage && (
+                  {voucher.discountPercentage != null && (
                     <span className="text-[10px] text-stone-300">
                       Desc. {voucher.discountPercentage}%
                     </span>
@@ -223,7 +235,7 @@ export function TransportVoucherTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(voucher.id, voucher.employee.name)}
+                      onClick={() => setVoucherToDelete(voucher)}
                       disabled={deletingId === voucher.id}
                       className="h-8 w-8 text-stone-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
                       title="Excluir"
@@ -237,6 +249,43 @@ export function TransportVoucherTable({
           })}
         </TableBody>
       </Table>
+
+      {/* Confirmação de exclusão (fallback com Dialog; migrar para AlertDialog do shadcn/ui quando o MCP voltar a funcionar) */}
+      <Dialog
+        open={!!voucherToDelete}
+        onOpenChange={(open) => !open && !deletingId && setVoucherToDelete(null)}
+      >
+        <DialogContent className="sm:max-w-sm bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-stone-100">
+              Excluir lançamento
+            </DialogTitle>
+            <DialogDescription className="text-xs text-stone-400">
+              Excluir o lançamento de Vale Transporte de &quot;{voucherToDelete?.employee.name}
+              &quot;? Essa ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="pt-3 border-t border-stone-800">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setVoucherToDelete(null)}
+              disabled={!!deletingId}
+              className="text-stone-400 hover:text-stone-100 text-xs"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={!!deletingId}
+              className="font-bold px-5 rounded-xl shadow-md bg-red-500 text-stone-950 hover:bg-red-400 shadow-red-500/20"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -202,7 +202,8 @@ export function CopyPreviousMonthDialog({
               <strong className="text-stone-200">
                 {MONTH_NAMES[targetMonth - 1]} de {targetYear}
               </strong>
-              . Lançamentos existentes no mês de destino serão atualizados.
+              . Lançamentos existentes no mês de destino serão{" "}
+              <strong className="text-stone-200">substituídos</strong>.
             </span>
           </div>
 
