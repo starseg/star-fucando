@@ -370,7 +370,7 @@ export function PrintAccountingView() {
                               </span>
                               <span className="text-xs text-stone-400">
                                 {(item.modals?.length ?? 0) > 2
-                                  ? `${item.modals?.length} modais cadastrados`
+                                  ? `${item.modals?.length} transportes cadastrados`
                                   : `Ida (${formatCurrency(item.inboundValue)}) + Volta (${formatCurrency(item.outboundValue)})`}
                               </span>
                             </div>

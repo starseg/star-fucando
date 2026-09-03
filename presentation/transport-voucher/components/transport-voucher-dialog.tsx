@@ -221,7 +221,7 @@ export function TransportVoucherDialog({
       return;
     }
     if (drafts.length === 0) {
-      setFormError("Adicione pelo menos um modal de transporte.");
+      setFormError("Adicione pelo menos um transporte.");
       return;
     }
 
@@ -385,7 +385,7 @@ export function TransportVoucherDialog({
               </div>
             </div>
 
-            {/* Lista dos Modais */}
+            {/* Lista de Transportes */}
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {drafts.map((draft) => {
                 const quantity = parseIntegerInput(draft.quantityText);
@@ -396,9 +396,9 @@ export function TransportVoucherDialog({
                     key={draft.key}
                     className="grid grid-cols-12 gap-2 items-center bg-stone-950/80 border border-stone-800/80 p-2.5 rounded-xl text-xs"
                   >
-                    {/* Nome do Modal */}
+                    {/* Nome do Transporte */}
                     <div className="col-span-4 space-y-0.5">
-                      <Label className="text-[10px] text-stone-400 font-medium">Transporte / Modal</Label>
+                      <Label className="text-[10px] text-stone-400 font-medium">Transporte</Label>
                       <Input
                         placeholder="Ex: Ônibus, Van..."
                         value={draft.name}
@@ -444,7 +444,7 @@ export function TransportVoucherDialog({
                       </div>
                     </div>
 
-                    {/* Ação (Remover se houver mais de 1 modal) */}
+                    {/* Ação (Remover se houver mais de 1 transporte) */}
                     <div className="col-span-1 text-right flex justify-end items-end pt-3">
                       {drafts.length > 1 ? (
                         <Button
