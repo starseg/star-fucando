@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { upsertMealVoucher, MealVoucherInput } from "@/application/meal-voucher/meal-voucher-actions";
-import { getEmployees } from "@/application/employee/employee-actions";
+import { getEmployeeOptions } from "@/application/employee/employee-actions";
 import { MealVoucherData } from "./meal-voucher-table";
 import { toast } from "sonner";
 import { Loader2, Utensils, Sparkles } from "lucide-react";
@@ -94,7 +94,7 @@ export function MealVoucherDialog({
 
   React.useEffect(() => {
     async function loadEmployees() {
-      const res = await getEmployees();
+      const res = await getEmployeeOptions();
       if (res.success && res.data) {
         setEmployees(res.data.map((e) => ({ id: e.id, name: e.name })));
       }

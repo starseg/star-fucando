@@ -1,20 +1,15 @@
 "use client";
 
 import * as React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { Edit2, Trash2, User } from "lucide-react";
 import { deleteEmployee } from "@/application/employee/employee-actions";
-import { toast } from "sonner";
+import { DataTable } from "@/presentation/shared/data-table";
+import { useDeleteWithConfirmation } from "@/presentation/shared/hooks/use-delete-with-confirmation";
+import { EmployeeDialog } from "./employee-dialog";
 
 export interface EmployeeData {
   id: string;
@@ -33,93 +28,54 @@ export interface EmployeeData {
 
 interface EmployeeTableProps {
   employees: EmployeeData[];
-  onEdit: (employee: EmployeeData) => void;
-  onRefresh: () => void;
 }
 
-export function EmployeeTable({ employees, onEdit, onRefresh }: EmployeeTableProps) {
-  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+export function EmployeeTable({ employees }: EmployeeTableProps) {
+  const router = useRouter();
+  const [editingEmployee, setEditingEmployee] = React.useState<EmployeeData | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Excluir o colaborador "${name}"? Todos os lançamentos vinculados a ele também serão removidos.`)) {
-      return;
-    }
+  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(deleteEmployee, {
+    onDeleted: () => router.refresh(),
+  });
 
-    setDeletingId(id);
-    try {
-      const res = await deleteEmployee(id);
-      if (res.success) {
-        toast.success("Colaborador removido com sucesso!");
-        onRefresh();
-      } else {
-        toast.error(res.error || "Erro ao remover colaborador.");
-      }
-    } catch {
-      toast.error("Erro inesperado ao excluir colaborador.");
-    } finally {
-      setDeletingId(null);
-    }
+  const openEmployeeEditDialog = (employee: EmployeeData) => {
+    setEditingEmployee(employee);
+    setIsEditDialogOpen(true);
   };
 
   if (employees.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-stone-800 bg-stone-900/30 p-12 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-3">
-          <User className="h-6 w-6" />
-        </div>
-        <h3 className="text-base font-bold text-stone-200">Nenhum colaborador cadastrado</h3>
-        <p className="mt-1 text-xs text-stone-400 max-w-sm">
-          Cadastre os funcionários da Star Seg para gerenciar benefícios e emitir recibos.
-        </p>
-      </div>
+      <DataTable.EmptyState
+        icon={User}
+        title="Nenhum colaborador cadastrado"
+        description="Cadastre os funcionários da Star Seg para gerenciar benefícios e emitir recibos."
+      />
     );
   }
 
   return (
-    <div className="rounded-2xl border border-stone-800/90 bg-[#12100e]/80 backdrop-blur-md overflow-hidden shadow-sm">
-      <Table>
-        <TableHeader className="bg-stone-950/80 border-b border-stone-800">
-          <TableRow className="border-none hover:bg-transparent">
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider pl-5">
-              Colaborador
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-              Chave PIX
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-              Departamento / Função
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-              Data de Admissão
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-center">
-              Histórico de Benefícios
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right pr-5 w-28">
-              Ações
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <>
+      <DataTable.Root>
+        <DataTable.Header>
+          <DataTable.HeadCell className="pl-5">Colaborador</DataTable.HeadCell>
+          <DataTable.HeadCell>Chave PIX</DataTable.HeadCell>
+          <DataTable.HeadCell>Departamento / Função</DataTable.HeadCell>
+          <DataTable.HeadCell>Data de Admissão</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-center">Histórico de Benefícios</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right pr-5 w-28">Ações</DataTable.HeadCell>
+        </DataTable.Header>
+        <DataTable.Body>
           {employees.map((employee) => (
-            <TableRow
-              key={employee.id}
-              className="border-b border-stone-800/60 hover:bg-stone-800/30 transition-colors"
-            >
+            <DataTable.Row key={employee.id}>
               <TableCell className="pl-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 text-xs font-black border border-amber-500/20">
-                    {employee.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-100 text-sm block">
-                      {employee.name}
-                    </span>
-                  </div>
-                </div>
+                <DataTable.AvatarCell name={employee.name} />
               </TableCell>
               <TableCell>
-                <span className="text-xs font-mono text-stone-300 bg-stone-900/80 border border-stone-800/80 px-2.5 py-1 rounded-md inline-block max-w-[200px] truncate" title={employee.pix || "Não informada"}>
+                <span
+                  className="text-xs font-mono text-stone-300 bg-stone-900/80 border border-stone-800/80 px-2.5 py-1 rounded-md inline-block max-w-[200px] truncate"
+                  title={employee.pix || "Não informada"}
+                >
                   {employee.pix || "Não informada"}
                 </span>
               </TableCell>
@@ -128,9 +84,7 @@ export function EmployeeTable({ employees, onEdit, onRefresh }: EmployeeTablePro
                   <span className="text-sm font-medium text-stone-200 block">
                     {employee.role || "Colaborador"}
                   </span>
-                  <span className="text-xs text-stone-300">
-                    {employee.department || "Operacional"}
-                  </span>
+                  <span className="text-xs text-stone-300">{employee.department || "Operacional"}</span>
                 </div>
               </TableCell>
               <TableCell className="text-xs font-medium text-stone-300">
@@ -140,13 +94,22 @@ export function EmployeeTable({ employees, onEdit, onRefresh }: EmployeeTablePro
                 <div className="flex items-center justify-center gap-1.5 flex-wrap">
                   {employee._count && (
                     <>
-                      <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px] bg-amber-500/5 px-2 py-0.5 rounded-md">
+                      <Badge
+                        variant="outline"
+                        className="border-amber-500/30 text-amber-400 text-[10px] bg-amber-500/5 px-2 py-0.5 rounded-md"
+                      >
                         VT: {employee._count.transportVoucher}
                       </Badge>
-                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px] bg-emerald-500/5 px-2 py-0.5 rounded-md">
+                      <Badge
+                        variant="outline"
+                        className="border-emerald-500/30 text-emerald-400 text-[10px] bg-emerald-500/5 px-2 py-0.5 rounded-md"
+                      >
                         VA: {employee._count.mealVoucher}
                       </Badge>
-                      <Badge variant="outline" className="border-sky-500/30 text-sky-400 text-[10px] bg-sky-500/5 px-2 py-0.5 rounded-md">
+                      <Badge
+                        variant="outline"
+                        className="border-sky-500/30 text-sky-400 text-[10px] bg-sky-500/5 px-2 py-0.5 rounded-md"
+                      >
                         Assid.: {employee._count.attendanceAward}
                       </Badge>
                     </>
@@ -154,32 +117,39 @@ export function EmployeeTable({ employees, onEdit, onRefresh }: EmployeeTablePro
                 </div>
               </TableCell>
               <TableCell className="text-right pr-5">
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEdit(employee)}
-                    className="h-8 w-8 text-stone-400 hover:text-stone-100 hover:bg-stone-800 rounded-lg"
+                <DataTable.Actions>
+                  <DataTable.IconAction
+                    icon={Edit2}
+                    onClick={() => openEmployeeEditDialog(employee)}
                     title="Editar colaborador"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(employee.id, employee.name)}
+                  />
+                  <DataTable.IconAction
+                    icon={Trash2}
+                    variant="danger"
                     disabled={deletingId === employee.id}
-                    className="h-8 w-8 text-stone-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
+                    onClick={() =>
+                      deleteWithConfirmation(
+                        employee.id,
+                        `Excluir o colaborador "${employee.name}"? Todos os lançamentos vinculados a ele também serão removidos.`,
+                        "Colaborador removido com sucesso!",
+                        "Erro ao remover colaborador.",
+                      )
+                    }
                     title="Excluir colaborador"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                  />
+                </DataTable.Actions>
               </TableCell>
-            </TableRow>
+            </DataTable.Row>
           ))}
-        </TableBody>
-      </Table>
-    </div>
+        </DataTable.Body>
+      </DataTable.Root>
+
+      <EmployeeDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSuccess={() => router.refresh()}
+        employeeToEdit={editingEmployee}
+      />
+    </>
   );
 }

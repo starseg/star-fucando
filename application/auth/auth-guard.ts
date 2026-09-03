@@ -1,9 +1,12 @@
 "use server";
 
+import { cache } from "react";
 import { auth } from "@/auth";
 
+const getSession = cache(auth);
+
 export async function requireApprovedUser() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.status !== "APPROVED") {
     return { ok: false as const, error: "Acesso não autorizado. Faça login novamente." };
   }
@@ -11,7 +14,7 @@ export async function requireApprovedUser() {
 }
 
 export async function requireAdmin() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.status !== "APPROVED" || session.user.role !== "ADMIN") {
     return { ok: false as const, error: "Acesso restrito para administradores." };
   }

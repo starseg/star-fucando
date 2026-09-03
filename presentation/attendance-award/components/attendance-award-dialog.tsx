@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { upsertAttendanceAward, AttendanceAwardInput } from "@/application/attendance-award/attendance-award-actions";
-import { getEmployees } from "@/application/employee/employee-actions";
+import { getEmployeeOptions } from "@/application/employee/employee-actions";
 import { AttendanceAwardData } from "./attendance-award-table";
 import { toast } from "sonner";
 import { Loader2, Award, Sparkles } from "lucide-react";
@@ -84,7 +84,7 @@ export function AttendanceAwardDialog({
 
   React.useEffect(() => {
     async function loadEmployees() {
-      const res = await getEmployees();
+      const res = await getEmployeeOptions();
       if (res.success && res.data) {
         setEmployees(res.data.map((e) => ({ id: e.id, name: e.name })));
       }

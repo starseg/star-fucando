@@ -24,7 +24,7 @@ import {
   TransportVoucherInput,
   TransportModalInput,
 } from "@/application/transport-voucher/transport-voucher-actions";
-import { getEmployees } from "@/application/employee/employee-actions";
+import { getEmployeeOptions } from "@/application/employee/employee-actions";
 import { TransportVoucherData } from "./transport-voucher-table";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Bus, Sparkles } from "lucide-react";
@@ -108,7 +108,7 @@ export function TransportVoucherDialog({
   // Carrega lista de colaboradores
   React.useEffect(() => {
     async function loadEmployees() {
-      const res = await getEmployees();
+      const res = await getEmployeeOptions();
       if (res.success && res.data) {
         setEmployees(res.data.map((e) => ({ id: e.id, name: e.name })));
       }

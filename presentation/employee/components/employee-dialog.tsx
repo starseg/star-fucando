@@ -4,20 +4,14 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
+import { EntityDialogFooter } from "@/presentation/shared/dialog/entity-dialog-footer";
 import { createEmployee, updateEmployee } from "@/application/employee/employee-actions";
 import { toast } from "sonner";
-import { Loader2, UserPlus, UserCheck } from "lucide-react";
+import { UserPlus, UserCheck } from "lucide-react";
 
 const employeeSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
@@ -91,7 +85,7 @@ export function EmployeeDialog({
     }
   }, [employeeToEdit, reset, isOpen]);
 
-  const onSubmit = async (data: EmployeeFormData) => {
+  const persistEmployee = async (data: EmployeeFormData) => {
     setIsLoading(true);
     try {
       if (employeeToEdit) {
@@ -129,25 +123,17 @@ export function EmployeeDialog({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="pb-3 border-b border-stone-800/80">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              {employeeToEdit ? <UserCheck className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
-            </div>
-            <div>
-              <DialogTitle className="text-lg font-bold text-stone-100">
-                {employeeToEdit ? "Editar Colaborador" : "Novo Colaborador"}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-stone-400">
-                {employeeToEdit
-                  ? "Atualize as informações cadastrais do funcionário."
-                  : "Cadastre um novo colaborador para lançar benefícios."}
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+        <EntityDialogHeader
+          icon={employeeToEdit ? UserCheck : UserPlus}
+          title={employeeToEdit ? "Editar Colaborador" : "Novo Colaborador"}
+          description={
+            employeeToEdit
+              ? "Atualize as informações cadastrais do funcionário."
+              : "Cadastre um novo colaborador para lançar benefícios."
+          }
+        />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit(persistEmployee)} className="space-y-4 pt-2">
           <div className="space-y-1.5">
             <Label htmlFor="name" className="text-xs font-semibold text-stone-300">
               Nome Completo *
@@ -212,33 +198,11 @@ export function EmployeeDialog({
             />
           </div>
 
-          <DialogFooter className="pt-3 border-t border-stone-800">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onClose}
-              disabled={isLoading}
-              className="text-stone-400 hover:text-stone-100 text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-amber-500 text-stone-950 hover:bg-amber-400 font-bold px-5 rounded-xl shadow-md shadow-amber-500/20"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : employeeToEdit ? (
-                "Salvar Alterações"
-              ) : (
-                "Cadastrar Colaborador"
-              )}
-            </Button>
-          </DialogFooter>
+          <EntityDialogFooter
+            onCancel={onClose}
+            isSubmitting={isLoading}
+            submitLabel={employeeToEdit ? "Salvar Alterações" : "Cadastrar Colaborador"}
+          />
         </form>
       </DialogContent>
     </Dialog>
