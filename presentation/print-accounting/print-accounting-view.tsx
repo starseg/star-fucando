@@ -18,6 +18,32 @@ import { formatCurrency, formatMonthYear } from "@/lib/utils";
 import { Printer, ArrowLeft, Loader2, Bus, Utensils, Award, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 
+interface PrintAccountingItem {
+  id: string;
+  referenceMonth?: Date | string;
+  employee?: {
+    name?: string;
+    department?: string | null;
+    role?: string | null;
+    pix?: string | null;
+  };
+  // Vale Transporte
+  workingDays?: number;
+  modals?: { name: string }[];
+  inboundValue?: number;
+  outboundValue?: number;
+  totalVouchers?: number;
+  totalValue?: number;
+  discountPercentage?: number | null;
+  // Vale Alimentação
+  workedDays?: number;
+  unitValue?: number;
+  discounts?: number | null;
+  netValue?: number;
+  // Prêmio Assiduidade
+  bonusValue?: number;
+}
+
 export function PrintAccountingView() {
   const searchParams = useSearchParams();
   const tipo = searchParams.get("tipo");
@@ -26,7 +52,7 @@ export function PrintAccountingView() {
   const anoParam = searchParams.get("ano");
 
   const [isLoading, setIsLoading] = React.useState(true);
-  const [data, setData] = React.useState<any[]>([]);
+  const [data, setData] = React.useState<PrintAccountingItem[]>([]);
 
   React.useEffect(() => {
     async function loadData() {
@@ -92,7 +118,7 @@ export function PrintAccountingView() {
       <div className="flex h-screen flex-col items-center justify-center bg-[#0d0c0a] text-stone-100 p-6 text-center">
         <h2 className="text-xl font-bold text-stone-200">Nenhum lançamento selecionado</h2>
         <p className="mt-2 text-sm text-stone-400 max-w-md">
-          Selecione os colaboradores desejados na tabela e clique no botão "Imprimir p/ Contabilidade".
+          Selecione os colaboradores desejados na tabela e clique no botão &ldquo;Imprimir p/ Contabilidade&rdquo;.
         </p>
         <Button
           onClick={() => window.close()}
@@ -343,8 +369,8 @@ export function PrintAccountingView() {
                                 {item.workingDays} dias úteis
                               </span>
                               <span className="text-xs text-stone-400">
-                                {item.modals?.length > 2
-                                  ? `${item.modals.length} modais cadastrados`
+                                {(item.modals?.length ?? 0) > 2
+                                  ? `${item.modals?.length} modais cadastrados`
                                   : `Ida (${formatCurrency(item.inboundValue)}) + Volta (${formatCurrency(item.outboundValue)})`}
                               </span>
                             </div>
@@ -382,7 +408,7 @@ export function PrintAccountingView() {
                             <span className="text-sm font-semibold text-stone-300 block">
                               {formatCurrency(item.totalValue)}
                             </span>
-                            {item.discounts > 0 && (
+                            {(item.discounts ?? 0) > 0 && (
                               <span className="text-[10px] text-red-400">
                                 Desc. -{formatCurrency(item.discounts)}
                               </span>

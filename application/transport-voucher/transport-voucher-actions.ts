@@ -117,7 +117,7 @@ export async function getTransportVouchers(month: number, year: number) {
 
     return {
       success: true,
-      data: vouchers.map(serializeVoucher),
+      data: vouchers.map((v) => serializeVoucher(v)),
     };
   } catch (error) {
     console.error("Erro ao buscar vales transporte:", error);
@@ -326,7 +326,7 @@ export async function getTransportVouchersForPrint(ids: string[]) {
 
     return {
       success: true,
-      data: vouchers.map(serializeVoucher),
+      data: vouchers.map((v) => serializeVoucher(v)),
     };
   } catch (error) {
     console.error("Erro ao buscar vales transporte para impressão:", error);

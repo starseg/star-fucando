@@ -12,13 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+type TransportPrintItem = React.ComponentProps<typeof TransportReceipt>["voucher"];
+type MealPrintItem = React.ComponentProps<typeof MealReceipt>["voucher"];
+type AttendancePrintItem = React.ComponentProps<typeof AttendanceReceipt>["award"];
+type PrintItem = TransportPrintItem | MealPrintItem | AttendancePrintItem;
+
 export function PrintView() {
   const searchParams = useSearchParams();
   const tipo = searchParams.get("tipo");
   const idsParam = searchParams.get("ids");
 
   const [isLoading, setIsLoading] = React.useState(true);
-  const [data, setData] = React.useState<any[]>([]);
+  const [data, setData] = React.useState<PrintItem[]>([]);
 
   React.useEffect(() => {
     async function loadData() {
@@ -37,13 +42,13 @@ export function PrintView() {
       try {
         if (tipo === "transporte") {
           const res = await getTransportVouchersForPrint(ids);
-          if (res.success && res.data) setData(res.data);
+          if (res.success && res.data) setData(res.data as unknown as TransportPrintItem[]);
         } else if (tipo === "alimentacao") {
           const res = await getMealVouchersForPrint(ids);
-          if (res.success && res.data) setData(res.data);
+          if (res.success && res.data) setData(res.data as unknown as MealPrintItem[]);
         } else if (tipo === "assiduidade") {
           const res = await getAttendanceAwardsForPrint(ids);
-          if (res.success && res.data) setData(res.data);
+          if (res.success && res.data) setData(res.data as unknown as AttendancePrintItem[]);
         }
       } catch (err) {
         console.error(err);
@@ -149,17 +154,17 @@ export function PrintView() {
       <div className="py-8 px-4 print:p-0">
         {tipo === "transporte" &&
           data.map((voucher) => (
-            <TransportReceipt key={voucher.id} voucher={voucher} />
+            <TransportReceipt key={voucher.id} voucher={voucher as TransportPrintItem} />
           ))}
 
         {tipo === "alimentacao" &&
           data.map((voucher) => (
-            <MealReceipt key={voucher.id} voucher={voucher} />
+            <MealReceipt key={voucher.id} voucher={voucher as MealPrintItem} />
           ))}
 
         {tipo === "assiduidade" &&
           data.map((award) => (
-            <AttendanceReceipt key={award.id} award={award} />
+            <AttendanceReceipt key={award.id} award={award as AttendancePrintItem} />
           ))}
       </div>
     </div>
