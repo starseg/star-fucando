@@ -68,6 +68,7 @@ export function EmployeeDialog({
   });
 
   React.useEffect(() => {
+    if (!isOpen) return;
     if (employeeToEdit) {
       const formattedDate = employeeToEdit.admissionDate
         ? new Date(employeeToEdit.admissionDate).toISOString().split("T")[0]
@@ -121,8 +122,13 @@ export function EmployeeDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
+      <DialogContent
+        className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader className="pb-3 border-b border-stone-800/80">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">

@@ -95,6 +95,7 @@ export function AttendanceAwardDialog({
   }, [isOpen]);
 
   React.useEffect(() => {
+    if (!isOpen) return;
     if (awardToEdit) {
       const refDateStr = new Date(awardToEdit.referenceMonth).toISOString().split("T")[0];
       reset({
@@ -139,8 +140,13 @@ export function AttendanceAwardDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
+      <DialogContent
+        className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader className="pb-3 border-b border-stone-800/80">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
