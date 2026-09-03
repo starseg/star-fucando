@@ -122,6 +122,8 @@ model TransportVoucher {
   updatedAt           DateTime @updatedAt
 
   modals              TransportModal[]
+
+  @@unique([employeeId, referenceMonth])
 }
 
 model TransportModal {
