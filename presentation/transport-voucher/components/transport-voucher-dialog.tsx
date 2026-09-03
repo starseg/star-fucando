@@ -29,13 +29,43 @@ import { TransportVoucherData } from "./transport-voucher-table";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Bus, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { parseDecimalInput, parseIntegerInput, roundMoney, sumBy } from "@/lib/number";
 
-interface ModalItem {
-  id?: string;
+interface ModalDraft {
+  key: string;
+  dbId?: string;
   name: string;
-  unitValue: number | string;
-  quantity: number | string;
-  subtotal: number;
+  unitValueText: string;
+  quantityText: string;
+  followWorkingDays: boolean;
+}
+
+function createModalDraft(
+  name: string,
+  unitValue: number | string,
+  quantity: number | string,
+  followWorkingDays: boolean,
+  dbId?: string
+): ModalDraft {
+  return {
+    key: crypto.randomUUID(),
+    dbId,
+    name,
+    unitValueText: String(unitValue),
+    quantityText: String(quantity),
+    followWorkingDays,
+  };
+}
+
+function rowSubtotal(draft: ModalDraft): number {
+  return roundMoney(parseIntegerInput(draft.quantityText) * parseDecimalInput(draft.unitValueText));
+}
+
+function createDefaultDrafts(unitValue: number | string, quantity: number | string): ModalDraft[] {
+  return [
+    createModalDraft("Ônibus Ida", unitValue, quantity, true),
+    createModalDraft("Ônibus Volta", unitValue, quantity, true),
+  ];
 }
 
 interface TransportVoucherDialogProps {
@@ -66,11 +96,8 @@ export function TransportVoucherDialog({
   const [observations, setObservations] = React.useState("");
   const [formError, setFormError] = React.useState<string | null>(null);
 
-  // Lista dinâmica de modais com estado reativo puro
-  const [modals, setModals] = React.useState<ModalItem[]>([
-    { name: "Ônibus Ida", unitValue: 4.8, quantity: 22, subtotal: 105.6 },
-    { name: "Ônibus Volta", unitValue: 4.8, quantity: 22, subtotal: 105.6 },
-  ]);
+  // Lista dinâmica de rascunhos de modais (texto puro + cálculo derivado)
+  const [drafts, setDrafts] = React.useState<ModalDraft[]>(() => createDefaultDrafts(4.8, 22));
 
   const defaultRefDate = React.useMemo(() => {
     const year = defaultYear || new Date().getFullYear();
@@ -93,6 +120,7 @@ export function TransportVoucherDialog({
 
   // Preenche dados ao abrir para editar ou criar novo
   React.useEffect(() => {
+    if (!isOpen) return;
     if (voucherToEdit) {
       const refDateStr = new Date(voucherToEdit.referenceMonth).toISOString().split("T")[0];
       setEmployeeId(voucherToEdit.employeeId);
@@ -107,26 +135,19 @@ export function TransportVoucherDialog({
 
       const incoming = voucherToEdit.modals || [];
       if (incoming.length > 0) {
-        setModals(
-          incoming.map((m) => {
-            const q = Number(m.quantity) || 0;
-            const u = Number(m.unitValue) || 0;
-            return {
-              id: m.id,
-              name: m.name,
-              unitValue: u,
-              quantity: q,
-              subtotal: Number((q * u).toFixed(2)),
-            };
-          })
+        setDrafts(
+          incoming.map((m) =>
+            createModalDraft(m.name, Number(m.unitValue) || 0, Number(m.quantity) || 0, false, m.id)
+          )
         );
       } else {
+        // Dado legado: voucher sem modais no banco, fabrica as duas linhas padrão
         const wDays = Number(voucherToEdit.workingDays) || 22;
         const inVal = Number(voucherToEdit.inboundValue) || 4.8;
         const outVal = Number(voucherToEdit.outboundValue) || 4.8;
-        setModals([
-          { name: "Ônibus Ida", unitValue: inVal, quantity: wDays, subtotal: Number((wDays * inVal).toFixed(2)) },
-          { name: "Ônibus Volta", unitValue: outVal, quantity: wDays, subtotal: Number((wDays * outVal).toFixed(2)) },
+        setDrafts([
+          createModalDraft("Ônibus Ida", inVal, wDays, true),
+          createModalDraft("Ônibus Volta", outVal, wDays, true),
         ]);
       }
     } else {
@@ -135,82 +156,59 @@ export function TransportVoucherDialog({
       setWorkingDays(22);
       setDiscountPercentage(6.0);
       setObservations("");
-      setModals([
-        { name: "Ônibus Ida", unitValue: 4.8, quantity: 22, subtotal: 105.6 },
-        { name: "Ônibus Volta", unitValue: 4.8, quantity: 22, subtotal: 105.6 },
-      ]);
+      setDrafts(createDefaultDrafts(4.8, 22));
     }
     setFormError(null);
   }, [voucherToEdit, defaultRefDate, isOpen]);
 
-  // Atualiza um campo específico de um modal e recalcula o subtotal
-  const handleUpdateModal = (index: number, field: "name" | "unitValue" | "quantity", value: string | number) => {
-    setModals((prev) => {
-      const next = [...prev];
-      const item = { ...next[index], [field]: value };
-      const q = typeof item.quantity === "number" ? item.quantity : parseInt(String(item.quantity), 10) || 0;
-      const u = typeof item.unitValue === "number" ? item.unitValue : parseFloat(String(item.unitValue).replace(",", ".")) || 0;
-      item.subtotal = Number((q * u).toFixed(2));
-      next[index] = item;
-      return next;
-    });
+  // Atualiza o nome ou a tarifa de um rascunho (não afeta followWorkingDays)
+  const handleUpdateModalText = (
+    key: string,
+    field: "name" | "unitValueText",
+    value: string
+  ) => {
+    setDrafts((prev) => prev.map((d) => (d.key === key ? { ...d, [field]: value } : d)));
   };
 
-  // Adiciona um transporte extra à lista
+  // Atualiza a quantidade de um rascunho manualmente, desligando o acompanhamento dos dias úteis
+  const handleUpdateModalQuantity = (key: string, value: string) => {
+    setDrafts((prev) =>
+      prev.map((d) => (d.key === key ? { ...d, quantityText: value, followWorkingDays: false } : d))
+    );
+  };
+
+  // Adiciona um transporte extra à lista, iniciando com os dias úteis atuais
   const handleAddExtraModal = () => {
-    const numericDays = typeof workingDays === "number" ? workingDays : parseInt(String(workingDays), 10) || 10;
-    setModals((prev) => [
-      ...prev,
-      {
-        name: "Transporte Adicional",
-        unitValue: 5.0,
-        quantity: numericDays,
-        subtotal: Number((numericDays * 5.0).toFixed(2)),
-      },
-    ]);
+    const numericDays = parseIntegerInput(workingDays);
+    setDrafts((prev) => [...prev, createModalDraft("Transporte Adicional", 5.0, numericDays, true)]);
   };
 
   // Remove um modal da lista com recálculo instantâneo
-  const handleRemoveModal = (index: number) => {
-    setModals((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  // Sincroniza dias úteis com os modais de ida e volta padrão
-  const handleWorkingDaysChange = (daysVal: string) => {
-    setWorkingDays(daysVal);
-    const parsedDays = parseInt(daysVal, 10) || 0;
-    setModals((prev) => {
-      if (prev.length === 0) return prev;
-      return prev.map((m, idx) => {
-        if (idx === 0 || idx === 1) {
-          const u = typeof m.unitValue === "number" ? m.unitValue : parseFloat(String(m.unitValue).replace(",", ".")) || 0;
-          return {
-            ...m,
-            quantity: daysVal === "" ? "" : parsedDays,
-            subtotal: Number((parsedDays * u).toFixed(2)),
-          };
-        }
-        return m;
-      });
+  const handleRemoveModal = (key: string) => {
+    setDrafts((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((d) => d.key !== key);
     });
   };
 
-  // Cálculos matemáticos derivados reativos sem risco de concatenação de strings
-  const totalVouchers = React.useMemo(() => {
-    return modals.reduce((sum, m) => {
-      const q = typeof m.quantity === "number" ? m.quantity : parseInt(String(m.quantity), 10) || 0;
-      return sum + q;
-    }, 0);
-  }, [modals]);
+  // Sincroniza dias úteis apenas com os modais que acompanham o padrão
+  const handleWorkingDaysChange = (daysVal: string) => {
+    setWorkingDays(daysVal);
+    setDrafts((prev) =>
+      prev.map((d) => (d.followWorkingDays ? { ...d, quantityText: daysVal } : d))
+    );
+  };
 
-  const totalValue = React.useMemo(() => {
-    const sum = modals.reduce((acc, m) => {
-      const q = typeof m.quantity === "number" ? m.quantity : parseInt(String(m.quantity), 10) || 0;
-      const u = typeof m.unitValue === "number" ? m.unitValue : parseFloat(String(m.unitValue).replace(",", ".")) || 0;
-      return acc + (q * u);
-    }, 0);
-    return Number(sum.toFixed(2));
-  }, [modals]);
+  // Cálculos matemáticos derivados reativos, usando a mesma fonte de verdade do subtotal por linha
+  const totalVouchers = React.useMemo(
+    () => sumBy(drafts, (d) => parseIntegerInput(d.quantityText)),
+    [drafts]
+  );
+
+  const totalValue = React.useMemo(
+    () => sumBy(drafts, (d) => rowSubtotal(d)),
+    [drafts]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,36 +220,43 @@ export function TransportVoucherDialog({
       setFormError("Selecione o mês de referência.");
       return;
     }
-    if (modals.length === 0) {
+    if (drafts.length === 0) {
       setFormError("Adicione pelo menos um modal de transporte.");
       return;
+    }
+
+    for (const d of drafts) {
+      const name = (d.name || "").trim();
+      const quantity = parseIntegerInput(d.quantityText);
+      const unitValue = parseDecimalInput(d.unitValueText);
+      if (!name || quantity < 1 || unitValue <= 0) {
+        setFormError(`A linha "${name || d.name || "sem nome"}" precisa de uma quantidade e tarifa válidas.`);
+        return;
+      }
     }
 
     setIsLoading(true);
     setFormError(null);
     try {
-      const sanitizedModals: TransportModalInput[] = modals.map((m, idx) => {
-        const q = typeof m.quantity === "number" ? m.quantity : parseInt(String(m.quantity), 10) || 0;
-        const u = typeof m.unitValue === "number" ? m.unitValue : parseFloat(String(m.unitValue).replace(",", ".")) || 0;
-        const defaultName = idx === 0 ? "Ônibus Ida" : idx === 1 ? "Ônibus Volta" : `Transporte ${idx + 1}`;
-        const name = (m.name || "").trim() || defaultName;
-
+      const sanitizedModals: TransportModalInput[] = drafts.map((d) => {
+        const quantity = parseIntegerInput(d.quantityText);
+        const unitValue = parseDecimalInput(d.unitValueText);
         return {
-          id: m.id,
-          name,
-          unitValue: u,
-          quantity: q,
-          subtotal: Number((q * u).toFixed(2)),
+          id: d.dbId,
+          name: d.name.trim(),
+          unitValue,
+          quantity,
+          subtotal: roundMoney(quantity * unitValue),
         };
       });
 
-      const finalTotalVouchers = sanitizedModals.reduce((sum, m) => sum + m.quantity, 0);
-      const finalTotalValue = Number(
-        sanitizedModals.reduce((sum, m) => sum + m.subtotal, 0).toFixed(2)
-      );
+      const finalTotalVouchers = sumBy(sanitizedModals, (m) => m.quantity);
+      const finalTotalValue = roundMoney(sumBy(sanitizedModals, (m) => m.subtotal));
 
-      const m0Unit = sanitizedModals[0] ? sanitizedModals[0].unitValue : 0;
-      const m1Unit = sanitizedModals[1] ? sanitizedModals[1].unitValue : 0;
+      const inboundModal =
+        sanitizedModals.find((m) => m.name.toLowerCase().includes("ida")) ?? sanitizedModals[0];
+      const outboundModal =
+        sanitizedModals.find((m) => m.name.toLowerCase().includes("volta")) ?? sanitizedModals[1];
 
       const parsedDiscount =
         discountPercentage !== undefined &&
@@ -264,9 +269,9 @@ export function TransportVoucherDialog({
         id: voucherToEdit?.id,
         employeeId,
         referenceMonth,
-        inboundValue: m0Unit,
-        outboundValue: m1Unit,
-        workingDays: typeof workingDays === "number" ? workingDays : parseInt(String(workingDays), 10) || 0,
+        inboundValue: inboundModal ? inboundModal.unitValue : 0,
+        outboundValue: outboundModal ? outboundModal.unitValue : 0,
+        workingDays: parseIntegerInput(workingDays),
         weekendHolidayDays: 0,
         weekendHolidayValue: null,
         nightJokerIndicator: false,
@@ -296,8 +301,13 @@ export function TransportVoucherDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        className="sm:max-w-2xl bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl"
+      >
         <DialogHeader className="pb-3 border-b border-stone-800/80">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -377,12 +387,13 @@ export function TransportVoucherDialog({
 
             {/* Lista dos Modais */}
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-              {modals.map((modal, index) => {
-                const isStandard = index === 0 || index === 1;
-
+              {drafts.map((draft) => {
+                const quantity = parseIntegerInput(draft.quantityText);
+                const unitValue = parseDecimalInput(draft.unitValueText);
+                const subtotal = rowSubtotal(draft);
                 return (
                   <div
-                    key={modal.id || `modal-${index}`}
+                    key={draft.key}
                     className="grid grid-cols-12 gap-2 items-center bg-stone-950/80 border border-stone-800/80 p-2.5 rounded-xl text-xs"
                   >
                     {/* Nome do Modal */}
@@ -390,8 +401,8 @@ export function TransportVoucherDialog({
                       <Label className="text-[10px] text-stone-400 font-medium">Transporte / Modal</Label>
                       <Input
                         placeholder="Ex: Ônibus, Van..."
-                        value={modal.name}
-                        onChange={(e) => handleUpdateModal(index, "name", e.target.value)}
+                        value={draft.name}
+                        onChange={(e) => handleUpdateModalText(draft.key, "name", e.target.value)}
                         className="bg-stone-900 border-stone-700/80 text-stone-100 h-7 text-xs rounded-lg font-medium"
                       />
                     </div>
@@ -400,12 +411,11 @@ export function TransportVoucherDialog({
                     <div className="col-span-3 space-y-0.5">
                       <Label className="text-[10px] text-stone-400 font-medium">Tarifa Unit. (R$)</Label>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="0,00"
-                        value={modal.unitValue}
-                        onChange={(e) => handleUpdateModal(index, "unitValue", e.target.value)}
+                        value={draft.unitValueText}
+                        onChange={(e) => handleUpdateModalText(draft.key, "unitValueText", e.target.value)}
                         className="bg-stone-900 border-stone-700/80 text-stone-100 h-7 text-xs rounded-lg text-right font-semibold"
                       />
                     </div>
@@ -414,11 +424,11 @@ export function TransportVoucherDialog({
                     <div className="col-span-2 space-y-0.5">
                       <Label className="text-[10px] text-stone-400 font-medium">Qtd Vales</Label>
                       <Input
-                        type="number"
-                        min="0"
+                        type="text"
+                        inputMode="numeric"
                         placeholder="0"
-                        value={modal.quantity}
-                        onChange={(e) => handleUpdateModal(index, "quantity", e.target.value)}
+                        value={draft.quantityText}
+                        onChange={(e) => handleUpdateModalQuantity(draft.key, e.target.value)}
                         className="bg-stone-900 border-stone-700/80 text-stone-100 h-7 text-xs rounded-lg text-center font-bold text-amber-300"
                       />
                     </div>
@@ -426,21 +436,24 @@ export function TransportVoucherDialog({
                     {/* Subtotal */}
                     <div className="col-span-2 space-y-0.5 text-right">
                       <Label className="text-[10px] text-stone-400 font-medium">Subtotal</Label>
-                      <div className="h-7 flex items-center justify-end font-bold text-stone-100 text-xs">
-                        {formatCurrency(modal.subtotal)}
+                      <div className="h-7 flex flex-col items-end justify-center font-bold text-stone-100 text-xs leading-tight">
+                        <span>{formatCurrency(subtotal)}</span>
+                        <span className="text-[9px] font-normal text-stone-500">
+                          {quantity} × {formatCurrency(unitValue)}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Ação (Remover se extra) */}
+                    {/* Ação (Remover se houver mais de 1 modal) */}
                     <div className="col-span-1 text-right flex justify-end items-end pt-3">
-                      {!isStandard ? (
+                      {drafts.length > 1 ? (
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           aria-label="Remover transporte"
-                          onClick={() => handleRemoveModal(index)}
-                          className="h-6 w-6 text-stone-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          onClick={() => handleRemoveModal(draft.key)}
+                          className="h-6 w-6 text-stone-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                           title="Remover este transporte"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
