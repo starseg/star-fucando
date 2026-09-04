@@ -25,7 +25,6 @@ export function LoginView() {
   return (
     <div className="w-full max-w-md">
       <div className="overflow-hidden rounded-2xl border border-stone-800 bg-stone-900/60 p-8 shadow-2xl backdrop-blur-xl">
-        {/* Header com Logo */}
         <div className="text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-lg shadow-amber-500/10">
             <ShieldCheck className="h-8 w-8" />
@@ -39,7 +38,6 @@ export function LoginView() {
           </p>
         </div>
 
-        {/* Mensagens de Erro */}
         {error && (
           <div className="mt-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-300">
             <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
@@ -51,7 +49,6 @@ export function LoginView() {
           </div>
         )}
 
-        {/* Botão Google Login */}
         <div className="mt-8">
           <Button
             type="button"
@@ -81,7 +78,6 @@ export function LoginView() {
           </Button>
         </div>
 
-        {/* Rodapé */}
         <div className="mt-8 border-t border-stone-800/80 pt-4 text-center">
           <span className="text-[11px] text-stone-300">
             Acesso restrito à equipe autorizada Star Seg

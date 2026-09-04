@@ -100,7 +100,7 @@ export function PrintAccountingView() {
     }
   }, [isLoading, data]);
 
-  const handlePrint = () => {
+  const triggerBrowserPrint = () => {
     window.print();
   };
 
@@ -200,7 +200,6 @@ export function PrintAccountingView() {
         }
       `}</style>
 
-      {/* Barra de Controle Superior (Apenas Tela) */}
       <div className="no-print sticky top-0 z-50 flex items-center justify-between border-b border-stone-800 bg-[#12100e]/95 px-6 py-3.5 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Button
@@ -222,7 +221,7 @@ export function PrintAccountingView() {
 
         <div className="flex items-center gap-3">
           <Button
-            onClick={handlePrint}
+            onClick={triggerBrowserPrint}
             className="bg-amber-500 text-stone-950 hover:bg-amber-400 font-bold shadow-lg shadow-amber-500/20 px-4 h-9"
           >
             <Printer className="mr-2 h-4 w-4" />
@@ -231,10 +230,8 @@ export function PrintAccountingView() {
         </div>
       </div>
 
-      {/* Documento do Relatório */}
       <div className="print-container mx-auto max-w-5xl px-6 py-8">
         <div className="rounded-2xl border border-stone-800 bg-[#12100e] p-6 shadow-xl space-y-6">
-          {/* Cabeçalho do Relatório */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-stone-800/80">
             <div className="flex items-center gap-3.5">
               <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${theme.badgeColor}`}>
@@ -277,7 +274,6 @@ export function PrintAccountingView() {
             </div>
           </div>
 
-          {/* Tabela Formatada Fiel ao Modelo Visual */}
           <div className="overflow-hidden rounded-xl border border-stone-800/90 bg-[#12100e]/80">
             <Table>
               <TableHeader className="bg-stone-950/90 border-b border-stone-800">
@@ -335,7 +331,6 @@ export function PrintAccountingView() {
                       key={item.id}
                       className="border-b border-stone-800/60 transition-colors hover:bg-stone-800/20"
                     >
-                      {/* Coluna do Colaborador com PIX */}
                       <TableCell className="pl-4 py-3.5">
                         <div className="flex items-start gap-3">
                           <div
@@ -360,7 +355,6 @@ export function PrintAccountingView() {
                         </div>
                       </TableCell>
 
-                      {/* Vale Transporte */}
                       {tipo === "transporte" && (
                         <>
                           <TableCell className="py-3.5">
@@ -391,7 +385,6 @@ export function PrintAccountingView() {
                         </>
                       )}
 
-                      {/* Vale Alimentação */}
                       {tipo === "alimentacao" && (
                         <>
                           <TableCell className="py-3.5">
@@ -422,7 +415,6 @@ export function PrintAccountingView() {
                         </>
                       )}
 
-                      {/* Assiduidade */}
                       {tipo === "assiduidade" && (
                         <>
                           <TableCell className="text-xs font-medium text-stone-300 py-3.5">
@@ -442,7 +434,6 @@ export function PrintAccountingView() {
             </Table>
           </div>
 
-          {/* Rodapé Resumo */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-stone-400">
             <span>
               Total de registros: <strong className="text-stone-200">{data.length} colaboradores</strong>

@@ -71,7 +71,7 @@ export function PrintView() {
     }
   }, [isLoading, data]);
 
-  const handlePrint = () => {
+  const triggerBrowserPrint = () => {
     window.print();
   };
 
@@ -122,7 +122,6 @@ export function PrintView() {
         }
       `}</style>
 
-      {/* Floating Control Bar for Screen Only */}
       <div className="no-print sticky top-0 z-50 flex items-center justify-between border-b border-stone-800 bg-stone-950/90 px-6 py-3 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Button
@@ -141,7 +140,7 @@ export function PrintView() {
 
         <div className="flex items-center gap-3">
           <Button
-            onClick={handlePrint}
+            onClick={triggerBrowserPrint}
             className="bg-amber-500 text-stone-950 hover:bg-amber-400 font-bold shadow-lg shadow-amber-500/20"
           >
             <Printer className="mr-2 h-4 w-4" />
@@ -150,7 +149,6 @@ export function PrintView() {
         </div>
       </div>
 
-      {/* Receipt Sheets Container */}
       <div className="py-8 px-4 print:p-0">
         {tipo === "transporte" &&
           data.map((voucher) => (

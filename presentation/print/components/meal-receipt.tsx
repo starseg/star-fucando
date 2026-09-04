@@ -38,14 +38,12 @@ export function MealReceipt({ voucher }: MealReceiptProps) {
   return (
     <div className="receipt-page bg-white text-black font-sans border border-gray-300 shadow-md max-w-[210mm] mx-auto min-h-[145mm] p-10 sm:p-14 mb-8 print:mb-0 print:border-0 print:shadow-none print:p-8 flex flex-col justify-between">
       <div>
-        {/* Título do Recibo */}
         <div className="text-center pt-2 pb-10">
           <h1 className="text-base sm:text-lg font-bold uppercase tracking-wide text-black">
             RECIBO DE VALE ALIMENTAÇÃO
           </h1>
         </div>
 
-        {/* Texto do Recibo */}
         <p className="text-sm sm:text-[15px] leading-[2.2] text-black text-justify mb-8">
           Declaro ter recebido da empresa{" "}
           <strong className="font-bold">{COMPANY_CONFIG.corporateName}</strong>, inscrição{" "}
@@ -61,13 +59,11 @@ export function MealReceipt({ voucher }: MealReceiptProps) {
           , no mês de {monthName} de {year}.
         </p>
 
-        {/* Data */}
         <p className="text-sm sm:text-[15px] text-black">
           {dateFormatted}
         </p>
       </div>
 
-      {/* Assinatura e Dados do Colaborador */}
       <div className="pt-20">
         <div className="w-80 max-w-full border-b border-black mb-3" />
         <p className="text-sm sm:text-[15px] text-black">

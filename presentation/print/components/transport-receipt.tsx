@@ -44,14 +44,12 @@ export function TransportReceipt({ voucher }: TransportReceiptProps) {
   return (
     <div className="receipt-page bg-white text-black font-sans border border-gray-300 shadow-md max-w-[210mm] mx-auto min-h-[145mm] p-10 sm:p-14 mb-8 print:mb-0 print:border-0 print:shadow-none print:p-8 flex flex-col justify-between">
       <div>
-        {/* Título do Recibo */}
         <div className="text-center pt-2 pb-10">
           <h1 className="text-base sm:text-lg font-bold uppercase tracking-wide text-black">
             RECIBO DE VALE TRANSPORTE
           </h1>
         </div>
 
-        {/* Textos de Declaração e Autorização */}
         <div className="text-sm sm:text-[15px] leading-[2.2] text-black text-justify space-y-4 mb-8">
           <p>
             Declaro ter recebido da empresa{" "}
@@ -72,7 +70,6 @@ export function TransportReceipt({ voucher }: TransportReceiptProps) {
           </p>
         </div>
 
-        {/* Tabela de Modais em Caixa delimitada */}
         <div className="border border-black p-4 text-xs sm:text-sm font-sans mb-8">
           <div className="space-y-2">
             {voucher.modals && voucher.modals.length > 0 ? (
@@ -108,7 +105,6 @@ export function TransportReceipt({ voucher }: TransportReceiptProps) {
           </div>
         </div>
 
-        {/* Data Centralizada e Sublinhada */}
         <div className="text-center text-sm sm:text-[15px] text-black pt-4">
           <u>{dateFormatted}</u>
         </div>

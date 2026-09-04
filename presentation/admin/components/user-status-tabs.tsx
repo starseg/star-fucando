@@ -25,7 +25,7 @@ export function UserStatusTabs({ status, counts }: UserStatusTabsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const handleChange = (value: string) => {
+  const updateStatusFilter = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (value === "ALL") {
       params.delete("status");
@@ -37,7 +37,7 @@ export function UserStatusTabs({ status, counts }: UserStatusTabsProps) {
   };
 
   return (
-    <Tabs value={status ?? "ALL"} onValueChange={handleChange} className="w-full sm:w-auto">
+    <Tabs value={status ?? "ALL"} onValueChange={updateStatusFilter} className="w-full sm:w-auto">
       <TabsList className="bg-stone-900 border border-stone-800 p-1 rounded-xl">
         <TabsTrigger value="ALL" className={TAB_TRIGGER_CLASS}>
           Todos ({counts.total})
