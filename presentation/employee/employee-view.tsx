@@ -1,7 +1,7 @@
 import * as React from "react";
 import { EmployeeTable } from "./components/employee-table";
 import { EmployeeCreateButton } from "./components/employee-create-button";
-import { EmployeeSearchBar } from "./components/employee-search-bar";
+import { EntitySearchBar } from "@/presentation/shared/entity-search-bar";
 import { StatsCard } from "@/presentation/shared/stats-card";
 import { RefreshButton } from "@/presentation/shared/refresh-button";
 import { DataTablePagination } from "@/presentation/shared/data-table-pagination";
@@ -56,7 +56,7 @@ export async function EmployeeView({ searchQuery, page = 1 }: EmployeeViewProps)
       </div>
 
       <div className="flex flex-col sm:flex-row items-center gap-3">
-        <EmployeeSearchBar initialQuery={searchQuery} />
+        <EntitySearchBar initialQuery={searchQuery} placeholder="Buscar por nome, cargo ou departamento..." />
         <RefreshButton />
       </div>
 

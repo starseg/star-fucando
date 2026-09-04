@@ -4,14 +4,50 @@ import { prisma } from "@/infrastructure/db/prisma";
 import { requireAdmin } from "@/application/auth/auth-guard";
 import { UserRole, UserStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { DomainError } from "@/domain/shared/errors/domain-error";
+import { CannotRejectOwnAccountError, CannotRevokeOwnAdminRoleError } from "@/domain/user/errors/user-errors";
 
-export async function getUsers(statusFilter?: UserStatus) {
+export interface GetUsersPageParams {
+  search?: string;
+  status?: UserStatus;
+  page?: number;
+  pageSize?: number;
+}
+
+const DEFAULT_PAGE_SIZE = 20;
+
+function buildUserSearchWhere(search?: string) {
+  return search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+}
+
+export async function getUsersPage({ search, status, page = 1, pageSize = DEFAULT_PAGE_SIZE }: GetUsersPageParams = {}) {
   const guard = await requireAdmin();
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
+    const searchWhere = buildUserSearchWhere(search);
+    const where = status ? { ...searchWhere, status } : searchWhere;
+    const requestedPage = Number.isFinite(page) && page > 0 ? Math.trunc(page) : 1;
+
+    const [total, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.count({ where: { ...searchWhere, status: UserStatus.PENDING } }),
+      prisma.user.count({ where: { ...searchWhere, status: UserStatus.APPROVED } }),
+      prisma.user.count({ where: { ...searchWhere, status: UserStatus.REJECTED } }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(requestedPage, totalPages);
+
     const users = await prisma.user.findMany({
-      where: statusFilter ? { status: statusFilter } : {},
+      where,
       include: {
         approvedBy: {
           select: {
@@ -25,9 +61,27 @@ export async function getUsers(statusFilter?: UserStatus) {
         { status: "asc" },
         { createdAt: "desc" },
       ],
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
     });
 
-    return { success: true, data: users };
+    return {
+      success: true,
+      data: users,
+      currentUserId: guard.user.id,
+      pagination: {
+        page: currentPage,
+        pageSize,
+        total,
+        totalPages,
+      },
+      stats: {
+        total: pendingCount + approvedCount + rejectedCount,
+        pendingCount,
+        approvedCount,
+        rejectedCount,
+      },
+    };
   } catch (error) {
     console.error("Erro ao buscar usuários:", error);
     return { success: false, error: "Falha ao buscar usuários." };
@@ -60,11 +114,9 @@ export async function rejectUser(id: string) {
   const guard = await requireAdmin();
   if (!guard.ok) return { success: false, error: guard.error };
 
-  if (id === guard.user.id) {
-    return { success: false, error: "Você não pode rejeitar seu próprio usuário." };
-  }
-
   try {
+    if (id === guard.user.id) throw new CannotRejectOwnAccountError();
+
     const user = await prisma.user.update({
       where: { id },
       data: {
@@ -75,6 +127,7 @@ export async function rejectUser(id: string) {
     revalidatePath("/admin/aprovacoes");
     return { success: true, data: user };
   } catch (error) {
+    if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao rejeitar usuário:", error);
     return { success: false, error: "Falha ao rejeitar usuário." };
   }
@@ -84,11 +137,9 @@ export async function setUserRole(id: string, role: UserRole) {
   const guard = await requireAdmin();
   if (!guard.ok) return { success: false, error: guard.error };
 
-  if (id === guard.user.id && role !== UserRole.ADMIN) {
-    return { success: false, error: "Você não pode revogar seus próprios privilégios de administrador." };
-  }
-
   try {
+    if (id === guard.user.id && role !== UserRole.ADMIN) throw new CannotRevokeOwnAdminRoleError();
+
     const user = await prisma.user.update({
       where: { id },
       data: { role },
@@ -97,6 +148,7 @@ export async function setUserRole(id: string, role: UserRole) {
     revalidatePath("/admin/aprovacoes");
     return { success: true, data: user };
   } catch (error) {
+    if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao alterar papel do usuário:", error);
     return { success: false, error: "Falha ao alterar papel do usuário." };
   }
