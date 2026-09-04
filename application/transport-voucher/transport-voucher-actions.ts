@@ -5,6 +5,12 @@ import { revalidatePath } from "next/cache";
 import { requireApprovedUser } from "@/application/auth/auth-guard";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { DomainError } from "@/domain/shared/errors/domain-error";
+import { NoEntriesToCopyError } from "@/domain/shared/errors/no-entries-to-copy-error";
+import { assertDifferentReferenceMonth, toReferenceMonthRange } from "@/domain/shared/value-objects/reference-month";
+import { toPlainMoney, toNullablePlainMoney } from "@/domain/shared/value-objects/money";
+import { recalculateModals } from "@/domain/transport-voucher/value-objects/transport-modal-calculator";
+import { DuplicateTransportVoucherError } from "@/domain/transport-voucher/errors/transport-voucher-errors";
 
 export interface TransportModalInput {
   id?: string;
@@ -30,6 +36,16 @@ export interface TransportVoucherInput {
   observations?: string | null;
   modals: TransportModalInput[];
 }
+
+export interface GetTransportVouchersPageParams {
+  search?: string;
+  month: number;
+  year: number;
+  page?: number;
+  pageSize?: number;
+}
+
+const DEFAULT_PAGE_SIZE = 20;
 
 const transportModalSchema = z.object({
   id: z.string().optional(),
@@ -57,53 +73,101 @@ function formatZodError(error: z.ZodError): string {
     : "Dados inválidos para o vale transporte.";
 }
 
-function recalculateModals(modals: z.infer<typeof transportModalSchema>[]) {
-  const recalculated = modals.map((m) => ({
-    id: m.id,
-    name: m.name,
-    unitValue: m.unitValue,
-    quantity: m.quantity,
-    subtotal: Number((m.quantity * m.unitValue).toFixed(2)),
-  }));
-
-  const totalVouchers = recalculated.reduce((sum, m) => sum + m.quantity, 0);
-  const totalValue = Number(
-    recalculated.reduce((sum, m) => sum + m.subtotal, 0).toFixed(2)
-  );
-
-  let inboundModal = recalculated.find((m) => m.name.toLowerCase().includes("ida"));
-  let outboundModal = recalculated.find((m) => m.name.toLowerCase().includes("volta"));
-
-  if (!inboundModal && !outboundModal) {
-    inboundModal = recalculated[0];
-    outboundModal = recalculated[1];
-  } else if (!inboundModal) {
-    inboundModal = recalculated.find((m) => m !== outboundModal);
-  } else if (!outboundModal) {
-    outboundModal = recalculated.find((m) => m !== inboundModal);
-  }
-
-  const inboundValue = inboundModal?.unitValue ?? 0;
-  const outboundValue = recalculated.length > 1 ? outboundModal?.unitValue ?? 0 : 0;
-
-  return { recalculated, totalVouchers, totalValue, inboundValue, outboundValue };
+function buildTransportVoucherSearchWhere(search?: string) {
+  return search
+    ? {
+        employee: {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { department: { contains: search, mode: "insensitive" as const } },
+            { role: { contains: search, mode: "insensitive" as const } },
+          ],
+        },
+      }
+    : {};
 }
 
-export async function getTransportVouchers(month: number, year: number) {
+interface SerializedTransportModal {
+  id: string;
+  name: string;
+  unitValue: number;
+  quantity: number;
+  subtotal: number;
+}
+
+interface SerializedTransportVoucherFields {
+  workingDays: number;
+  totalVouchers: number;
+  inboundValue: number;
+  outboundValue: number;
+  weekendHolidayValue: number | null;
+  totalValue: number;
+  discountPercentage: number | null;
+  modals: SerializedTransportModal[];
+}
+
+function serializeVoucher<
+  T extends {
+    workingDays: unknown;
+    totalVouchers: unknown;
+    inboundValue: unknown;
+    outboundValue: unknown;
+    weekendHolidayValue: unknown;
+    totalValue: unknown;
+    discountPercentage: unknown;
+    modals: { id: string; name: string; quantity: unknown; unitValue: unknown; subtotal: unknown }[];
+  }
+>(v: T): Omit<T, keyof SerializedTransportVoucherFields> & SerializedTransportVoucherFields {
+  return {
+    ...v,
+    workingDays: Number(v.workingDays),
+    totalVouchers: Number(v.totalVouchers),
+    inboundValue: toPlainMoney(v.inboundValue),
+    outboundValue: toPlainMoney(v.outboundValue),
+    weekendHolidayValue: toNullablePlainMoney(v.weekendHolidayValue),
+    totalValue: toPlainMoney(v.totalValue),
+    discountPercentage: toNullablePlainMoney(v.discountPercentage),
+    modals: v.modals.map((m) => ({
+      id: m.id,
+      name: m.name,
+      quantity: Number(m.quantity),
+      unitValue: toPlainMoney(m.unitValue),
+      subtotal: toPlainMoney(m.subtotal),
+    })),
+  };
+}
+
+export async function getTransportVouchersPage({
+  search,
+  month,
+  year,
+  page = 1,
+  pageSize = DEFAULT_PAGE_SIZE,
+}: GetTransportVouchersPageParams) {
   const guard = await requireApprovedUser();
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    const startDate = new Date(Date.UTC(year, month - 1, 1));
-    const endDate = new Date(Date.UTC(year, month, 1));
+    const { start, end } = toReferenceMonthRange(month, year);
+    const where = {
+      referenceMonth: { gte: start, lt: end },
+      ...buildTransportVoucherSearchWhere(search),
+    };
+    const requestedPage = Number.isFinite(page) && page > 0 ? Math.trunc(page) : 1;
+
+    const [total, aggregate] = await Promise.all([
+      prisma.transportVoucher.count({ where }),
+      prisma.transportVoucher.aggregate({
+        where,
+        _sum: { totalValue: true, totalVouchers: true },
+      }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(requestedPage, totalPages);
 
     const vouchers = await prisma.transportVoucher.findMany({
-      where: {
-        referenceMonth: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
+      where,
       include: {
         employee: true,
         modals: true,
@@ -113,11 +177,24 @@ export async function getTransportVouchers(month: number, year: number) {
           name: "asc",
         },
       },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
     });
 
     return {
       success: true,
       data: vouchers.map((v) => serializeVoucher(v)),
+      pagination: {
+        page: currentPage,
+        pageSize,
+        total,
+        totalPages,
+      },
+      stats: {
+        totalValueSum: toPlainMoney(aggregate._sum.totalValue ?? 0),
+        employeesCount: total,
+        totalVouchersCount: aggregate._sum.totalVouchers ?? 0,
+      },
     };
   } catch (error) {
     console.error("Erro ao buscar vales transporte:", error);
@@ -246,46 +323,11 @@ export async function upsertTransportVoucher(input: TransportVoucherInput) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return {
-        success: false,
-        error: "Já existe um lançamento de Vale Transporte para este colaborador neste mês.",
-      };
+      return { success: false, error: new DuplicateTransportVoucherError().message };
     }
     console.error("Erro ao salvar vale transporte:", error);
     return { success: false, error: "Falha ao salvar vale transporte." };
   }
-}
-
-function serializeVoucher<
-  T extends {
-    workingDays: unknown;
-    totalVouchers: unknown;
-    inboundValue: unknown;
-    outboundValue: unknown;
-    weekendHolidayValue: unknown;
-    totalValue: unknown;
-    discountPercentage: unknown;
-    modals: { quantity: unknown; unitValue: unknown; subtotal: unknown }[];
-  }
->(v: T) {
-  return {
-    ...v,
-    workingDays: Number(v.workingDays),
-    totalVouchers: Number(v.totalVouchers),
-    inboundValue: Number(v.inboundValue),
-    outboundValue: Number(v.outboundValue),
-    weekendHolidayValue:
-      v.weekendHolidayValue != null ? Number(v.weekendHolidayValue) : null,
-    totalValue: Number(v.totalValue),
-    discountPercentage:
-      v.discountPercentage != null ? Number(v.discountPercentage) : null,
-    modals: v.modals.map((m) => ({
-      ...m,
-      quantity: Number(m.quantity),
-      unitValue: Number(m.unitValue),
-      subtotal: Number(m.subtotal),
-    })),
-  };
 }
 
 export async function deleteTransportVoucher(id: string) {
@@ -343,21 +385,17 @@ export async function copyTransportVouchers(
   const guard = await requireApprovedUser();
   if (!guard.ok) return { success: false, error: guard.error };
 
-  if (sourceMonth === targetMonth && sourceYear === targetYear) {
-    return { success: false, error: "O mês de origem não pode ser igual ao mês de destino." };
-  }
-
   try {
-    const srcStartDate = new Date(Date.UTC(sourceYear, sourceMonth - 1, 1));
-    const srcEndDate = new Date(Date.UTC(sourceYear, sourceMonth, 1));
-    const targetRefDate = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
-    const targetEndDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+    assertDifferentReferenceMonth(sourceMonth, sourceYear, targetMonth, targetYear);
+
+    const { start: srcStart, end: srcEnd } = toReferenceMonthRange(sourceMonth, sourceYear);
+    const { start: targetStart, end: targetEnd } = toReferenceMonthRange(targetMonth, targetYear);
 
     const sourceVouchers = await prisma.transportVoucher.findMany({
       where: {
         referenceMonth: {
-          gte: srcStartDate,
-          lt: srcEndDate,
+          gte: srcStart,
+          lt: srcEnd,
         },
       },
       include: {
@@ -365,19 +403,14 @@ export async function copyTransportVouchers(
       },
     });
 
-    if (sourceVouchers.length === 0) {
-      return {
-        success: false,
-        error: "Nenhum lançamento encontrado no mês de origem para copiar.",
-      };
-    }
+    if (sourceVouchers.length === 0) throw new NoEntriesToCopyError();
 
     const createdCount = await prisma.$transaction(async (tx) => {
       const existing = await tx.transportVoucher.findMany({
         where: {
           referenceMonth: {
-            gte: targetRefDate,
-            lt: targetEndDate,
+            gte: targetStart,
+            lt: targetEnd,
           },
         },
         select: { id: true },
@@ -397,7 +430,7 @@ export async function copyTransportVouchers(
         await tx.transportVoucher.create({
           data: {
             employeeId: v.employeeId,
-            referenceMonth: targetRefDate,
+            referenceMonth: targetStart,
             inboundValue: v.inboundValue,
             outboundValue: v.outboundValue,
             weekendHolidayValue: v.weekendHolidayValue,
@@ -426,6 +459,7 @@ export async function copyTransportVouchers(
     revalidatePath("/vale-transporte");
     return { success: true, count: createdCount };
   } catch (error) {
+    if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao copiar vales transporte:", error);
     return { success: false, error: "Falha ao copiar vales transporte do mês anterior." };
   }
