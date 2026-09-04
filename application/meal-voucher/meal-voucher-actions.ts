@@ -3,6 +3,13 @@
 import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
 import { requireApprovedUser } from "@/application/auth/auth-guard";
+import { DomainError } from "@/domain/shared/errors/domain-error";
+import { EmployeeRequiredError } from "@/domain/shared/errors/employee-required-error";
+import { ReferenceMonthRequiredError } from "@/domain/shared/errors/reference-month-required-error";
+import { NoEntriesToCopyError } from "@/domain/shared/errors/no-entries-to-copy-error";
+import { assertDifferentReferenceMonth, toReferenceMonthRange } from "@/domain/shared/value-objects/reference-month";
+import { toPlainMoney } from "@/domain/shared/value-objects/money";
+import { calculateNetValue } from "@/domain/meal-voucher/value-objects/meal-voucher-net-value";
 
 export interface MealVoucherInput {
   id?: string;
@@ -15,21 +22,73 @@ export interface MealVoucherInput {
   discounts?: number | null;
 }
 
-export async function getMealVouchers(month: number, year: number) {
+export interface GetMealVouchersPageParams {
+  search?: string;
+  month: number;
+  year: number;
+  page?: number;
+  pageSize?: number;
+}
+
+const DEFAULT_PAGE_SIZE = 20;
+
+function buildMealVoucherSearchWhere(search?: string) {
+  return search
+    ? {
+        employee: {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { department: { contains: search, mode: "insensitive" as const } },
+            { role: { contains: search, mode: "insensitive" as const } },
+          ],
+        },
+      }
+    : {};
+}
+
+function serializeVoucher<T extends { unitValue: unknown; totalValue: unknown; discounts: unknown }>(voucher: T) {
+  const totalValue = toPlainMoney(voucher.totalValue);
+  const discounts = voucher.discounts != null ? toPlainMoney(voucher.discounts) : 0;
+  return {
+    ...voucher,
+    unitValue: toPlainMoney(voucher.unitValue),
+    totalValue,
+    discounts,
+    netValue: calculateNetValue(totalValue, discounts),
+  };
+}
+
+export async function getMealVouchersPage({
+  search,
+  month,
+  year,
+  page = 1,
+  pageSize = DEFAULT_PAGE_SIZE,
+}: GetMealVouchersPageParams) {
   const guard = await requireApprovedUser();
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    const startDate = new Date(Date.UTC(year, month - 1, 1));
-    const endDate = new Date(Date.UTC(year, month, 1));
+    const { start, end } = toReferenceMonthRange(month, year);
+    const where = {
+      referenceMonth: { gte: start, lt: end },
+      ...buildMealVoucherSearchWhere(search),
+    };
+    const requestedPage = Number.isFinite(page) && page > 0 ? Math.trunc(page) : 1;
+
+    const [total, aggregate] = await Promise.all([
+      prisma.mealVoucher.count({ where }),
+      prisma.mealVoucher.aggregate({
+        where,
+        _sum: { totalValue: true, discounts: true, workedDays: true },
+      }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(requestedPage, totalPages);
 
     const vouchers = await prisma.mealVoucher.findMany({
-      where: {
-        referenceMonth: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
+      where,
       include: {
         employee: true,
       },
@@ -38,17 +97,27 @@ export async function getMealVouchers(month: number, year: number) {
           name: "asc",
         },
       },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
     });
+
+    const grossSum = toPlainMoney(aggregate._sum.totalValue ?? 0);
+    const discountsSum = toPlainMoney(aggregate._sum.discounts ?? 0);
 
     return {
       success: true,
-      data: vouchers.map((v) => ({
-        ...v,
-        unitValue: Number(v.unitValue),
-        totalValue: Number(v.totalValue),
-        discounts: v.discounts ? Number(v.discounts) : 0,
-        netValue: Number(v.totalValue) - (v.discounts ? Number(v.discounts) : 0),
-      })),
+      data: vouchers.map((v) => serializeVoucher(v)),
+      pagination: {
+        page: currentPage,
+        pageSize,
+        total,
+        totalPages,
+      },
+      stats: {
+        totalNetSum: calculateNetValue(grossSum, discountsSum),
+        employeesCount: total,
+        totalDaysSum: aggregate._sum.workedDays ?? 0,
+      },
     };
   } catch (error) {
     console.error("Erro ao buscar vales alimentação:", error);
@@ -61,12 +130,8 @@ export async function upsertMealVoucher(input: MealVoucherInput) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    if (!input.employeeId) {
-      return { success: false, error: "Colaborador é obrigatório." };
-    }
-    if (!input.referenceMonth) {
-      return { success: false, error: "Mês de referência é obrigatório." };
-    }
+    if (!input.employeeId) throw new EmployeeRequiredError();
+    if (!input.referenceMonth) throw new ReferenceMonthRequiredError();
 
     const refDate = new Date(input.referenceMonth);
 
@@ -88,7 +153,7 @@ export async function upsertMealVoucher(input: MealVoucherInput) {
       });
 
       revalidatePath("/vale-alimentacao");
-      return { success: true, data: voucher };
+      return { success: true, data: serializeVoucher(voucher) };
     }
 
     const voucher = await prisma.mealVoucher.create({
@@ -107,8 +172,9 @@ export async function upsertMealVoucher(input: MealVoucherInput) {
     });
 
     revalidatePath("/vale-alimentacao");
-    return { success: true, data: voucher };
+    return { success: true, data: serializeVoucher(voucher) };
   } catch (error) {
+    if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao salvar vale alimentação:", error);
     return { success: false, error: "Falha ao salvar vale alimentação." };
   }
@@ -149,13 +215,7 @@ export async function getMealVouchersForPrint(ids: string[]) {
 
     return {
       success: true,
-      data: vouchers.map((v) => ({
-        ...v,
-        unitValue: Number(v.unitValue),
-        totalValue: Number(v.totalValue),
-        discounts: v.discounts ? Number(v.discounts) : 0,
-        netValue: Number(v.totalValue) - (v.discounts ? Number(v.discounts) : 0),
-      })),
+      data: vouchers.map((v) => serializeVoucher(v)),
     };
   } catch (error) {
     console.error("Erro ao buscar vales alimentação para impressão:", error);
@@ -172,38 +232,29 @@ export async function copyMealVouchers(
   const guard = await requireApprovedUser();
   if (!guard.ok) return { success: false, error: guard.error };
 
-  if (sourceMonth === targetMonth && sourceYear === targetYear) {
-    return { success: false, error: "O mês de origem não pode ser igual ao mês de destino." };
-  }
-
   try {
-    const srcStartDate = new Date(Date.UTC(sourceYear, sourceMonth - 1, 1));
-    const srcEndDate = new Date(Date.UTC(sourceYear, sourceMonth, 1));
-    const targetRefDate = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
-    const targetEndDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+    assertDifferentReferenceMonth(sourceMonth, sourceYear, targetMonth, targetYear);
+
+    const { start: srcStart, end: srcEnd } = toReferenceMonthRange(sourceMonth, sourceYear);
+    const { start: targetStart, end: targetEnd } = toReferenceMonthRange(targetMonth, targetYear);
 
     const sourceVouchers = await prisma.mealVoucher.findMany({
       where: {
         referenceMonth: {
-          gte: srcStartDate,
-          lt: srcEndDate,
+          gte: srcStart,
+          lt: srcEnd,
         },
       },
     });
 
-    if (sourceVouchers.length === 0) {
-      return {
-        success: false,
-        error: "Nenhum lançamento encontrado no mês de origem para copiar.",
-      };
-    }
+    if (sourceVouchers.length === 0) throw new NoEntriesToCopyError();
 
     const createdCount = await prisma.$transaction(async (tx) => {
       await tx.mealVoucher.deleteMany({
         where: {
           referenceMonth: {
-            gte: targetRefDate,
-            lt: targetEndDate,
+            gte: targetStart,
+            lt: targetEnd,
           },
         },
       });
@@ -212,7 +263,7 @@ export async function copyMealVouchers(
         await tx.mealVoucher.create({
           data: {
             employeeId: v.employeeId,
-            referenceMonth: targetRefDate,
+            referenceMonth: targetStart,
             unitValue: v.unitValue,
             workedDays: v.workedDays,
             voucherCount: v.voucherCount,
@@ -228,6 +279,7 @@ export async function copyMealVouchers(
     revalidatePath("/vale-alimentacao");
     return { success: true, count: createdCount };
   } catch (error) {
+    if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao copiar vales alimentação:", error);
     return { success: false, error: "Falha ao copiar vales alimentação do mês anterior." };
   }
