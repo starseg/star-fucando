@@ -4,15 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,11 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
+import { EntityDialogFooter } from "@/presentation/shared/dialog/entity-dialog-footer";
 import { upsertAttendanceAward, AttendanceAwardInput } from "@/application/attendance-award/attendance-award-actions";
 import { getEmployeeOptions } from "@/application/employee/employee-actions";
 import { AttendanceAwardData } from "./attendance-award-table";
 import { toast } from "sonner";
-import { Loader2, Award, Sparkles } from "lucide-react";
+import { Award, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 const attendanceAwardSchema = z.object({
@@ -113,7 +107,7 @@ export function AttendanceAwardDialog({
     }
   }, [awardToEdit, reset, defaultRefDate, isOpen]);
 
-  const onSubmit = async (data: AttendanceAwardFormData) => {
+  const persistAttendanceAward = async (data: AttendanceAwardFormData) => {
     setIsLoading(true);
     try {
       const payload: AttendanceAwardInput = {
@@ -147,23 +141,14 @@ export function AttendanceAwardDialog({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="pb-3 border-b border-stone-800/80">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <Award className="h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-lg font-bold text-stone-100">
-                {awardToEdit ? "Editar Prêmio de Assiduidade" : "Novo Prêmio de Assiduidade"}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-stone-400">
-                Lançamento de bonificação por assiduidade integral.
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+        <EntityDialogHeader
+          icon={Award}
+          title={awardToEdit ? "Editar Prêmio de Assiduidade" : "Novo Prêmio de Assiduidade"}
+          description="Lançamento de bonificação por assiduidade integral."
+          color="sky"
+        />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit(persistAttendanceAward)} className="space-y-4 pt-2">
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-stone-300">Colaborador *</Label>
             <Select
@@ -220,33 +205,12 @@ export function AttendanceAwardDialog({
             </span>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-stone-800">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onClose}
-              disabled={isLoading}
-              className="text-stone-400 hover:text-stone-100 text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-sky-500 text-stone-950 hover:bg-sky-400 font-bold px-5 rounded-xl shadow-md shadow-sky-500/20"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : awardToEdit ? (
-                "Salvar Alterações"
-              ) : (
-                "Cadastrar Premiação"
-              )}
-            </Button>
-          </DialogFooter>
+          <EntityDialogFooter
+            onCancel={onClose}
+            isSubmitting={isLoading}
+            submitLabel={awardToEdit ? "Salvar Alterações" : "Cadastrar Premiação"}
+            color="sky"
+          />
         </form>
       </DialogContent>
     </Dialog>

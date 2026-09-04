@@ -3,6 +3,12 @@
 import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
 import { requireApprovedUser } from "@/application/auth/auth-guard";
+import { DomainError } from "@/domain/shared/errors/domain-error";
+import { EmployeeRequiredError } from "@/domain/shared/errors/employee-required-error";
+import { ReferenceMonthRequiredError } from "@/domain/shared/errors/reference-month-required-error";
+import { NoEntriesToCopyError } from "@/domain/shared/errors/no-entries-to-copy-error";
+import { assertDifferentReferenceMonth, toReferenceMonthRange } from "@/domain/shared/value-objects/reference-month";
+import { toPlainMoney } from "@/domain/shared/value-objects/money";
 
 export interface AttendanceAwardInput {
   id?: string;
@@ -11,21 +17,62 @@ export interface AttendanceAwardInput {
   bonusValue: number;
 }
 
-export async function getAttendanceAwards(month: number, year: number) {
+export interface GetAttendanceAwardsPageParams {
+  search?: string;
+  month: number;
+  year: number;
+  page?: number;
+  pageSize?: number;
+}
+
+const DEFAULT_PAGE_SIZE = 20;
+
+function buildAttendanceAwardSearchWhere(search?: string) {
+  return search
+    ? {
+        employee: {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { department: { contains: search, mode: "insensitive" as const } },
+            { role: { contains: search, mode: "insensitive" as const } },
+          ],
+        },
+      }
+    : {};
+}
+
+function serializeAward<T extends { bonusValue: unknown }>(award: T) {
+  return { ...award, bonusValue: toPlainMoney(award.bonusValue) };
+}
+
+export async function getAttendanceAwardsPage({
+  search,
+  month,
+  year,
+  page = 1,
+  pageSize = DEFAULT_PAGE_SIZE,
+}: GetAttendanceAwardsPageParams) {
   const guard = await requireApprovedUser();
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    const startDate = new Date(Date.UTC(year, month - 1, 1));
-    const endDate = new Date(Date.UTC(year, month, 1));
+    const { start, end } = toReferenceMonthRange(month, year);
+    const where = {
+      referenceMonth: { gte: start, lt: end },
+      ...buildAttendanceAwardSearchWhere(search),
+    };
+    const requestedPage = Number.isFinite(page) && page > 0 ? Math.trunc(page) : 1;
+
+    const [total, aggregate] = await Promise.all([
+      prisma.attendanceAward.count({ where }),
+      prisma.attendanceAward.aggregate({ where, _sum: { bonusValue: true } }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(requestedPage, totalPages);
 
     const awards = await prisma.attendanceAward.findMany({
-      where: {
-        referenceMonth: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
+      where,
       include: {
         employee: true,
       },
@@ -34,14 +81,26 @@ export async function getAttendanceAwards(month: number, year: number) {
           name: "asc",
         },
       },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
     });
+
+    const totalBonusSum = toPlainMoney(aggregate._sum.bonusValue ?? 0);
 
     return {
       success: true,
-      data: awards.map((a) => ({
-        ...a,
-        bonusValue: Number(a.bonusValue),
-      })),
+      data: awards.map((a) => serializeAward(a)),
+      pagination: {
+        page: currentPage,
+        pageSize,
+        total,
+        totalPages,
+      },
+      stats: {
+        totalBonusSum,
+        employeesCount: total,
+        averageBonus: total > 0 ? toPlainMoney(totalBonusSum / total) : 0,
+      },
     };
   } catch (error) {
     console.error("Erro ao buscar prêmios de assiduidade:", error);
@@ -54,12 +113,8 @@ export async function upsertAttendanceAward(input: AttendanceAwardInput) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    if (!input.employeeId) {
-      return { success: false, error: "Colaborador é obrigatório." };
-    }
-    if (!input.referenceMonth) {
-      return { success: false, error: "Mês de referência é obrigatório." };
-    }
+    if (!input.employeeId) throw new EmployeeRequiredError();
+    if (!input.referenceMonth) throw new ReferenceMonthRequiredError();
 
     const refDate = new Date(input.referenceMonth);
 
@@ -77,7 +132,7 @@ export async function upsertAttendanceAward(input: AttendanceAwardInput) {
       });
 
       revalidatePath("/assiduidade");
-      return { success: true, data: award };
+      return { success: true, data: serializeAward(award) };
     }
 
     const award = await prisma.attendanceAward.create({
@@ -92,8 +147,9 @@ export async function upsertAttendanceAward(input: AttendanceAwardInput) {
     });
 
     revalidatePath("/assiduidade");
-    return { success: true, data: award };
+    return { success: true, data: serializeAward(award) };
   } catch (error) {
+    if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao salvar prêmio de assiduidade:", error);
     return { success: false, error: "Falha ao salvar prêmio de assiduidade." };
   }
@@ -134,10 +190,7 @@ export async function getAttendanceAwardsForPrint(ids: string[]) {
 
     return {
       success: true,
-      data: awards.map((a) => ({
-        ...a,
-        bonusValue: Number(a.bonusValue),
-      })),
+      data: awards.map((a) => serializeAward(a)),
     };
   } catch (error) {
     console.error("Erro ao buscar prêmios de assiduidade para impressão:", error);
@@ -154,38 +207,29 @@ export async function copyAttendanceAwards(
   const guard = await requireApprovedUser();
   if (!guard.ok) return { success: false, error: guard.error };
 
-  if (sourceMonth === targetMonth && sourceYear === targetYear) {
-    return { success: false, error: "O mês de origem não pode ser igual ao mês de destino." };
-  }
-
   try {
-    const srcStartDate = new Date(Date.UTC(sourceYear, sourceMonth - 1, 1));
-    const srcEndDate = new Date(Date.UTC(sourceYear, sourceMonth, 1));
-    const targetRefDate = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
-    const targetEndDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+    assertDifferentReferenceMonth(sourceMonth, sourceYear, targetMonth, targetYear);
+
+    const { start: srcStart, end: srcEnd } = toReferenceMonthRange(sourceMonth, sourceYear);
+    const { start: targetStart, end: targetEnd } = toReferenceMonthRange(targetMonth, targetYear);
 
     const sourceAwards = await prisma.attendanceAward.findMany({
       where: {
         referenceMonth: {
-          gte: srcStartDate,
-          lt: srcEndDate,
+          gte: srcStart,
+          lt: srcEnd,
         },
       },
     });
 
-    if (sourceAwards.length === 0) {
-      return {
-        success: false,
-        error: "Nenhum lançamento encontrado no mês de origem para copiar.",
-      };
-    }
+    if (sourceAwards.length === 0) throw new NoEntriesToCopyError();
 
     const createdCount = await prisma.$transaction(async (tx) => {
       await tx.attendanceAward.deleteMany({
         where: {
           referenceMonth: {
-            gte: targetRefDate,
-            lt: targetEndDate,
+            gte: targetStart,
+            lt: targetEnd,
           },
         },
       });
@@ -194,7 +238,7 @@ export async function copyAttendanceAwards(
         await tx.attendanceAward.create({
           data: {
             employeeId: a.employeeId,
-            referenceMonth: targetRefDate,
+            referenceMonth: targetStart,
             bonusValue: a.bonusValue,
           },
         });
@@ -206,6 +250,7 @@ export async function copyAttendanceAwards(
     revalidatePath("/assiduidade");
     return { success: true, count: createdCount };
   } catch (error) {
+    if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao copiar prêmios de assiduidade:", error);
     return { success: false, error: "Falha ao copiar prêmios de assiduidade do mês anterior." };
   }

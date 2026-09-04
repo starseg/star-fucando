@@ -1,20 +1,17 @@
 "use client";
 
 import * as React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useRouter } from "next/navigation";
+import { TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency, formatMonthYear } from "@/lib/utils";
 import { Edit2, Trash2, Printer, Award } from "lucide-react";
-import { deleteAttendanceAward } from "@/application/attendance-award/attendance-award-actions";
+import { deleteAttendanceAward, copyAttendanceAwards } from "@/application/attendance-award/attendance-award-actions";
+import { DataTable } from "@/presentation/shared/data-table";
+import { useDeleteWithConfirmation } from "@/presentation/shared/hooks/use-delete-with-confirmation";
+import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
+import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
+import { AttendanceAwardDialog } from "./attendance-award-dialog";
 import { toast } from "sonner";
 
 export interface AttendanceAwardData {
@@ -32,177 +29,163 @@ export interface AttendanceAwardData {
 
 interface AttendanceAwardTableProps {
   awards: AttendanceAwardData[];
-  selectedIds: string[];
-  onToggleSelect: (id: string) => void;
-  onToggleSelectAll: (allSelected: boolean) => void;
-  onEdit: (award: AttendanceAwardData) => void;
-  onRefresh: () => void;
-  onPrint: (ids: string[]) => void;
-  onCopyPreviousMonth?: () => void;
+  month: number;
+  year: number;
 }
 
-export function AttendanceAwardTable({
-  awards,
-  selectedIds,
-  onToggleSelect,
-  onToggleSelectAll,
-  onEdit,
-  onRefresh,
-  onPrint,
-  onCopyPreviousMonth,
-}: AttendanceAwardTableProps) {
-  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTableProps) {
+  const router = useRouter();
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [editingAward, setEditingAward] = React.useState<AttendanceAwardData | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
+
+  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(deleteAttendanceAward, {
+    onDeleted: () => router.refresh(),
+  });
 
   const allSelected = awards.length > 0 && selectedIds.length === awards.length;
 
-  const handleDelete = async (id: string, employeeName: string) => {
-    if (!confirm(`Excluir a premiação de assiduidade de "${employeeName}"?`)) {
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const toggleSelectAll = (checked: boolean) => {
+    setSelectedIds(checked ? awards.map((a) => a.id) : []);
+  };
+
+  const openEditDialog = (award: AttendanceAwardData) => {
+    setEditingAward(award);
+    setIsEditDialogOpen(true);
+  };
+
+  const printReceipts = (ids: string[]) => {
+    if (ids.length === 0) {
+      toast.warning("Selecione pelo menos um lançamento para imprimir.");
       return;
     }
+    window.open(`/imprimir?tipo=assiduidade&ids=${ids.join(",")}`, "_blank");
+  };
 
-    setDeletingId(id);
-    try {
-      const res = await deleteAttendanceAward(id);
-      if (res.success) {
-        toast.success("Lançamento excluído com sucesso!");
-        onRefresh();
-      } else {
-        toast.error(res.error || "Erro ao excluir lançamento.");
-      }
-    } catch {
-      toast.error("Erro inesperado.");
-    } finally {
-      setDeletingId(null);
+  const printAccountingReport = (ids: string[]) => {
+    if (ids.length === 0) {
+      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      return;
     }
+    window.open(`/imprimir-contabilidade?tipo=assiduidade&ids=${ids.join(",")}&mes=${month}&ano=${year}`, "_blank");
   };
 
   if (awards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-stone-800 bg-stone-900/30 p-12 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 mb-3">
-          <Award className="h-6 w-6" />
-        </div>
-        <h3 className="text-base font-bold text-stone-200">Nenhum lançamento encontrado</h3>
-        <p className="mt-1 text-xs text-stone-400 max-w-sm">
-          Você pode cadastrar uma nova bonificação ou copiar os dados do mês anterior com 1 clique.
-        </p>
-        {onCopyPreviousMonth && (
-          <Button
-            onClick={onCopyPreviousMonth}
-            className="mt-4 bg-sky-500 text-stone-950 hover:bg-sky-400 font-bold shadow-md shadow-sky-500/20 rounded-xl h-9 px-4 text-xs"
-          >
-            Copiar Premiações do Mês Anterior
-          </Button>
-        )}
-      </div>
+      <>
+        <DataTable.EmptyState
+          icon={Award}
+          title="Nenhum lançamento encontrado"
+          description="Você pode cadastrar uma nova bonificação ou copiar os dados do mês anterior com 1 clique."
+          color="sky"
+          actionLabel="Copiar Premiações do Mês Anterior"
+          onAction={() => setIsCopyDialogOpen(true)}
+        />
+
+        <CopyPreviousMonthDialog
+          isOpen={isCopyDialogOpen}
+          onClose={() => setIsCopyDialogOpen(false)}
+          onSuccess={() => router.refresh()}
+          targetMonth={month}
+          targetYear={year}
+          benefitTitle="Prêmio de Assiduidade"
+          accentColor="sky"
+          onCopy={copyAttendanceAwards}
+        />
+      </>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-stone-800/90 bg-[#12100e]/80 backdrop-blur-md overflow-hidden shadow-sm">
-      <Table>
-        <TableHeader className="bg-stone-950/80 border-b border-stone-800">
-          <TableRow className="border-none hover:bg-transparent">
-            <TableHead className="w-12 text-center">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={(checked) => onToggleSelectAll(Boolean(checked))}
-                aria-label="Selecionar todos"
-              />
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-              Colaborador
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-              Competência
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right">
-              Valor da Bonificação
-            </TableHead>
-            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right w-36">
-              Ações
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <>
+      <DataTable.Root>
+        <DataTable.Header>
+          <DataTable.SelectAllCell checked={allSelected} onCheckedChange={toggleSelectAll} />
+          <DataTable.HeadCell>Colaborador</DataTable.HeadCell>
+          <DataTable.HeadCell>Competência</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right">Valor da Bonificação</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right w-36">Ações</DataTable.HeadCell>
+        </DataTable.Header>
+        <DataTable.Body>
           {awards.map((award) => {
             const isSelected = selectedIds.includes(award.id);
-
             return (
-              <TableRow
-                key={award.id}
-                className={`border-b border-stone-800/60 transition-colors ${
-                  isSelected ? "bg-sky-500/10 hover:bg-sky-500/15" : "hover:bg-stone-800/30"
-                }`}
-              >
-                <TableCell className="text-center">
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => onToggleSelect(award.id)}
-                    aria-label={`Selecionar ${award.employee.name}`}
-                  />
-                </TableCell>
+              <DataTable.Row key={award.id} selected={isSelected} accentColor="sky">
+                <DataTable.SelectRowCell
+                  checked={isSelected}
+                  onCheckedChange={() => toggleSelect(award.id)}
+                  label={`Selecionar ${award.employee.name}`}
+                />
                 <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black border bg-sky-500/10 text-sky-400 border-sky-500/20">
-                      {award.employee.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-100 text-sm block">
-                        {award.employee.name}
-                      </span>
-                      <span className="text-xs text-stone-300">
-                        {award.employee.department || "Operacional"} • {award.employee.role || "Colaborador"}
-                      </span>
-                    </div>
-                  </div>
+                  <DataTable.AvatarCell
+                    name={award.employee.name}
+                    subtitle={`${award.employee.department || "Operacional"} • ${award.employee.role || "Colaborador"}`}
+                    color="sky"
+                  />
                 </TableCell>
                 <TableCell className="text-xs font-medium text-stone-300">
                   {formatMonthYear(award.referenceMonth)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className="text-base font-black text-sky-400 block">
-                    {formatCurrency(award.bonusValue)}
-                  </span>
+                  <span className="text-base font-black text-sky-400 block">{formatCurrency(award.bonusValue)}</span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1.5">
+                  <DataTable.Actions>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onPrint([award.id])}
+                      onClick={() => printReceipts([award.id])}
                       className="h-8 px-2.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10 rounded-lg"
                       title="Imprimir recibo individual"
                     >
                       <Printer className="mr-1 h-3.5 w-3.5" />
                       Recibo
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit(award)}
-                      className="h-8 w-8 text-stone-400 hover:text-stone-100 hover:bg-stone-800 rounded-lg"
-                      title="Editar"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(award.id, award.employee.name)}
+                    <DataTable.IconAction icon={Edit2} onClick={() => openEditDialog(award)} title="Editar" />
+                    <DataTable.IconAction
+                      icon={Trash2}
+                      variant="danger"
                       disabled={deletingId === award.id}
-                      className="h-8 w-8 text-stone-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
+                      onClick={() =>
+                        deleteWithConfirmation(
+                          award.id,
+                          `Excluir a premiação de assiduidade de "${award.employee.name}"?`,
+                          "Lançamento excluído com sucesso!",
+                          "Erro ao excluir lançamento.",
+                        )
+                      }
                       title="Excluir"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                    />
+                  </DataTable.Actions>
                 </TableCell>
-              </TableRow>
+              </DataTable.Row>
             );
           })}
-        </TableBody>
-      </Table>
-    </div>
+        </DataTable.Body>
+      </DataTable.Root>
+
+      <AttendanceAwardDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSuccess={() => router.refresh()}
+        awardToEdit={editingAward}
+        defaultMonth={month}
+        defaultYear={year}
+      />
+
+      <SelectionActionBar
+        selectedCount={selectedIds.length}
+        totalCount={awards.length}
+        onPrint={() => printReceipts(selectedIds)}
+        onPrintAccounting={() => printAccountingReport(selectedIds)}
+        onClear={() => setSelectedIds([])}
+        benefitType="Prêmio de Assiduidade"
+      />
+    </>
   );
 }

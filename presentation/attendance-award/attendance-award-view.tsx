@@ -1,101 +1,33 @@
-"use client";
-
 import * as React from "react";
-import { AttendanceAwardTable, AttendanceAwardData } from "./components/attendance-award-table";
-import { AttendanceAwardDialog } from "./components/attendance-award-dialog";
-import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
-import { MonthNavigator } from "@/presentation/shared/month-navigator";
+import { AttendanceAwardTable } from "./components/attendance-award-table";
+import { AttendanceAwardCreateButton } from "./components/attendance-award-create-button";
+import { AttendanceAwardCopyButton } from "./components/attendance-award-copy-button";
+import { MonthNavigatorUrl } from "@/presentation/shared/month-navigator-url";
 import { StatsCard } from "@/presentation/shared/stats-card";
-import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
-import { Button } from "@/components/ui/button";
-import { Award, Plus, Users, DollarSign, Trophy, RefreshCw, Copy } from "lucide-react";
-import {
-  getAttendanceAwards,
-  copyAttendanceAwards,
-} from "@/application/attendance-award/attendance-award-actions";
+import { RefreshButton } from "@/presentation/shared/refresh-button";
+import { EntitySearchBar } from "@/presentation/shared/entity-search-bar";
+import { DataTablePagination } from "@/presentation/shared/data-table-pagination";
+import { Award, Users, DollarSign, Trophy } from "lucide-react";
+import { getAttendanceAwardsPage } from "@/application/attendance-award/attendance-award-actions";
 import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
 
-export function AttendanceAwardView() {
-  const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
+interface AttendanceAwardViewProps {
+  searchQuery?: string;
+  month: number;
+  year: number;
+  page?: number;
+}
 
-  const [awards, setAwards] = React.useState<AttendanceAwardData[]>([]);
-  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
-  const [awardToEdit, setAwardToEdit] = React.useState<AttendanceAwardData | null>(null);
-
-  const fetchAwards = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await getAttendanceAwards(selectedMonth, selectedYear);
-      if (res.success && res.data) {
-        setAwards(res.data as unknown as AttendanceAwardData[]);
-        setSelectedIds([]);
-      } else {
-        toast.error(res.error || "Erro ao carregar prêmios de assiduidade.");
-      }
-    } catch {
-      toast.error("Erro de conexão.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedMonth, selectedYear]);
-
-  React.useEffect(() => {
-    fetchAwards();
-  }, [fetchAwards]);
-
-  const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleToggleSelectAll = (allSelected: boolean) => {
-    if (allSelected) {
-      setSelectedIds(awards.map((a) => a.id));
-    } else {
-      setSelectedIds([]);
-    }
-  };
-
-  const handleOpenCreate = () => {
-    setAwardToEdit(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleOpenEdit = (award: AttendanceAwardData) => {
-    setAwardToEdit(award);
-    setIsDialogOpen(true);
-  };
-
-  const handlePrint = (ids: string[]) => {
-    if (ids.length === 0) {
-      toast.warning("Selecione pelo menos um lançamento para imprimir.");
-      return;
-    }
-    const url = `/imprimir?tipo=assiduidade&ids=${ids.join(",")}`;
-    window.open(url, "_blank");
-  };
-
-  const handlePrintAccounting = (ids: string[]) => {
-    if (ids.length === 0) {
-      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
-      return;
-    }
-    const url = `/imprimir-contabilidade?tipo=assiduidade&ids=${ids.join(",")}&mes=${selectedMonth}&ano=${selectedYear}`;
-    window.open(url, "_blank");
-  };
-
-  const totalBonusSum = awards.reduce((acc, a) => acc + Number(a.bonusValue), 0);
-  const averageBonus = awards.length > 0 ? totalBonusSum / awards.length : 0;
+export async function AttendanceAwardView({ searchQuery, month, year, page = 1 }: AttendanceAwardViewProps) {
+  const result = await getAttendanceAwardsPage({ search: searchQuery, month, year, page });
+  const awards = result.success ? result.data ?? [] : [];
+  const pagination = result.success ? result.pagination : undefined;
+  const stats = result.success
+    ? result.stats ?? { totalBonusSum: 0, employeesCount: 0, averageBonus: 0 }
+    : { totalBonusSum: 0, employeesCount: 0, averageBonus: 0 };
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header com Navegação de Mês */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
@@ -110,110 +42,50 @@ export function AttendanceAwardView() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <MonthNavigator
-            month={selectedMonth}
-            year={selectedYear}
-            onChange={(m, y) => {
-              setSelectedMonth(m);
-              setSelectedYear(y);
-            }}
-          />
-
-          <Button
-            variant="outline"
-            onClick={() => setIsCopyDialogOpen(true)}
-            className="border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl h-10 px-3.5 text-xs shadow-sm"
-            title="Copiar todas as premiações do mês anterior"
-          >
-            <Copy className="mr-1.5 h-3.5 w-3.5 text-sky-400" />
-            Copiar Mês Anterior
-          </Button>
-
-          <Button
-            onClick={handleOpenCreate}
-            className="bg-sky-500 text-stone-950 hover:bg-sky-400 font-bold shadow-md shadow-sky-500/20 rounded-xl h-10 px-4"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova Bonificação
-          </Button>
+          <MonthNavigatorUrl month={month} year={year} />
+          <AttendanceAwardCopyButton targetMonth={month} targetYear={year} />
+          <AttendanceAwardCreateButton defaultMonth={month} defaultYear={year} />
         </div>
       </div>
 
-      {/* Métricas do Mês */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatsCard
           title="Total em Premiações"
-          value={formatCurrency(totalBonusSum)}
+          value={formatCurrency(stats.totalBonusSum)}
           subtitle="Valor total distribuído no mês"
           icon={DollarSign}
           color="sky"
         />
         <StatsCard
           title="Colaboradores Premiados"
-          value={`${awards.length} pessoas`}
+          value={`${stats.employeesCount} pessoas`}
           subtitle="Cumpriram 100% da assiduidade"
           icon={Users}
           color="stone"
         />
         <StatsCard
           title="Média por Colaborador"
-          value={formatCurrency(averageBonus)}
+          value={formatCurrency(stats.averageBonus)}
           subtitle="Ticket médio da bonificação"
           icon={Trophy}
           color="sky"
         />
       </div>
 
-      {/* Tabela de Lançamentos */}
-      {isLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-stone-800 bg-stone-900/40">
-          <RefreshCw className="h-6 w-6 animate-spin text-sky-500" />
-          <span className="ml-3 text-xs text-stone-400">Carregando premiações...</span>
+      <div className="flex flex-col sm:flex-row items-center gap-3">
+        <EntitySearchBar initialQuery={searchQuery} placeholder="Buscar por nome, cargo ou departamento..." />
+        <RefreshButton />
+      </div>
+
+      {!result.success && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+          {result.error || "Falha ao carregar prêmios de assiduidade."}
         </div>
-      ) : (
-        <AttendanceAwardTable
-          awards={awards}
-          selectedIds={selectedIds}
-          onToggleSelect={handleToggleSelect}
-          onToggleSelectAll={handleToggleSelectAll}
-          onEdit={handleOpenEdit}
-          onRefresh={fetchAwards}
-          onPrint={handlePrint}
-          onCopyPreviousMonth={() => setIsCopyDialogOpen(true)}
-        />
       )}
 
-      {/* Diálogo de Cadastro / Edição */}
-      <AttendanceAwardDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onSuccess={fetchAwards}
-        awardToEdit={awardToEdit}
-        defaultMonth={selectedMonth}
-        defaultYear={selectedYear}
-      />
+      <AttendanceAwardTable awards={awards} month={month} year={year} />
 
-      {/* Diálogo de Cópia do Mês Anterior */}
-      <CopyPreviousMonthDialog
-        isOpen={isCopyDialogOpen}
-        onClose={() => setIsCopyDialogOpen(false)}
-        onSuccess={fetchAwards}
-        targetMonth={selectedMonth}
-        targetYear={selectedYear}
-        benefitTitle="Prêmio de Assiduidade"
-        accentColor="sky"
-        onCopy={copyAttendanceAwards}
-      />
-
-      {/* Barra Flutuante de Ação em Lote */}
-      <SelectionActionBar
-        selectedCount={selectedIds.length}
-        totalCount={awards.length}
-        onPrint={() => handlePrint(selectedIds)}
-        onPrintAccounting={() => handlePrintAccounting(selectedIds)}
-        onClear={() => setSelectedIds([])}
-        benefitType="Prêmio de Assiduidade"
-      />
+      {pagination && <DataTablePagination page={pagination.page} totalPages={pagination.totalPages} />}
     </div>
   );
 }
