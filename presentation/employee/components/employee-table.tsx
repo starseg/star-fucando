@@ -6,7 +6,7 @@ import { TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { Edit2, Trash2, User } from "lucide-react";
-import { deleteEmployee } from "@/application/employee/employee-actions";
+import { deleteEmployee } from "@/application/employee/use-cases/delete-employee";
 import { DataTable } from "@/presentation/shared/data-table";
 import { useDeleteWithConfirmation } from "@/presentation/shared/hooks/use-delete-with-confirmation";
 import { EmployeeDialog } from "./employee-dialog";

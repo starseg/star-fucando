@@ -8,7 +8,7 @@ import { RefreshButton } from "@/presentation/shared/refresh-button";
 import { EntitySearchBar } from "@/presentation/shared/entity-search-bar";
 import { DataTablePagination } from "@/presentation/shared/data-table-pagination";
 import { Award, Users, DollarSign, Trophy } from "lucide-react";
-import { getAttendanceAwardsPage } from "@/application/attendance-award/attendance-award-actions";
+import { getAttendanceAwardsPage } from "@/application/attendance-award/use-cases/get-attendance-awards-page";
 import { formatCurrency } from "@/lib/utils";
 
 interface AttendanceAwardViewProps {

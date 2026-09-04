@@ -1,6 +1,6 @@
-import { getTransportVouchersForPrint } from "@/application/transport-voucher/transport-voucher-actions";
-import { getMealVouchersForPrint } from "@/application/meal-voucher/meal-voucher-actions";
-import { getAttendanceAwardsForPrint } from "@/application/attendance-award/attendance-award-actions";
+import { getTransportVouchersForPrint } from "@/application/transport-voucher/use-cases/get-transport-vouchers-for-print";
+import { getMealVouchersForPrint } from "@/application/meal-voucher/use-cases/get-meal-vouchers-for-print";
+import { getAttendanceAwardsForPrint } from "@/application/attendance-award/use-cases/get-attendance-awards-for-print";
 import { PrintView, type PrintItem } from "@/presentation/print/print-view";
 
 export const metadata = {
@@ -12,7 +12,10 @@ interface ImprimirPageProps {
   searchParams: Promise<{ tipo?: string; ids?: string }>;
 }
 
-async function loadPrintData(tipo: string | undefined, ids: string[]): Promise<PrintItem[]> {
+async function loadPrintData(
+  tipo: string | undefined,
+  ids: string[],
+): Promise<PrintItem[]> {
   if (!tipo || ids.length === 0) return [];
 
   if (tipo === "transporte") {
@@ -30,7 +33,9 @@ async function loadPrintData(tipo: string | undefined, ids: string[]): Promise<P
   return [];
 }
 
-export default async function ImprimirPage({ searchParams }: ImprimirPageProps) {
+export default async function ImprimirPage({
+  searchParams,
+}: ImprimirPageProps) {
   const { tipo, ids: idsParam } = await searchParams;
   const ids = idsParam ? idsParam.split(",").filter(Boolean) : [];
   const data = await loadPrintData(tipo, ids);

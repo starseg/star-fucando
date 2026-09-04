@@ -18,7 +18,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { approveUser, rejectUser, setUserRole } from "@/application/user/user-actions";
+import { approveUser } from "@/application/user/use-cases/approve-user";
+import { rejectUser } from "@/application/user/use-cases/reject-user";
+import { setUserRole } from "@/application/user/use-cases/set-user-role";
 import { DataTable } from "@/presentation/shared/data-table";
 import { useConfirmedRowAction } from "@/presentation/shared/hooks/use-confirmed-row-action";
 

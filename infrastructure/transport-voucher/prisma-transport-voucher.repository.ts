@@ -1,5 +1,5 @@
 import { prisma } from "@/infrastructure/db/prisma";
-import type { TransportVoucher, TransportModal, Employee } from "@prisma/client";
+import type { TransportVoucher, TransportModal } from "@prisma/client";
 import {
   ITransportVoucherRepository,
   TransportVoucherPageParams,

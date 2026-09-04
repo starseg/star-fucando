@@ -6,7 +6,7 @@ import { RefreshButton } from "@/presentation/shared/refresh-button";
 import { EntitySearchBar } from "@/presentation/shared/entity-search-bar";
 import { DataTablePagination } from "@/presentation/shared/data-table-pagination";
 import { ShieldCheck, Clock, CheckCircle2, XCircle } from "lucide-react";
-import { getUsersPage } from "@/application/user/user-actions";
+import { getUsersPage } from "@/application/user/use-cases/get-users-page";
 import { UserStatus } from "@prisma/client";
 
 interface UserApprovalViewProps {

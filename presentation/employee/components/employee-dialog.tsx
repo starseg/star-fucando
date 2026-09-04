@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
 import { EntityDialogFooter } from "@/presentation/shared/dialog/entity-dialog-footer";
-import { createEmployee, updateEmployee } from "@/application/employee/employee-actions";
+import { createEmployee } from "@/application/employee/use-cases/create-employee";
+import { updateEmployee } from "@/application/employee/use-cases/update-employee";
 import { toast } from "sonner";
 import { UserPlus, UserCheck } from "lucide-react";
 

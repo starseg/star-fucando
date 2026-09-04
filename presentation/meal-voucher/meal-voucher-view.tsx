@@ -8,7 +8,7 @@ import { RefreshButton } from "@/presentation/shared/refresh-button";
 import { EntitySearchBar } from "@/presentation/shared/entity-search-bar";
 import { DataTablePagination } from "@/presentation/shared/data-table-pagination";
 import { Utensils, Users, DollarSign, CalendarCheck } from "lucide-react";
-import { getMealVouchersPage } from "@/application/meal-voucher/meal-voucher-actions";
+import { getMealVouchersPage } from "@/application/meal-voucher/use-cases/get-meal-vouchers-page";
 import { formatCurrency } from "@/lib/utils";
 
 interface MealVoucherViewProps {

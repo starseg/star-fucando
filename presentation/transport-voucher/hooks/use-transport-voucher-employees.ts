@@ -1,5 +1,5 @@
 import * as React from "react";
-import { getEmployeeOptions } from "@/application/employee/employee-actions";
+import { getEmployeeOptions } from "@/application/employee/use-cases/get-employee-options";
 
 export function useTransportVoucherEmployees(isOpen: boolean) {
   const [employees, setEmployees] = React.useState<{ id: string; name: string }[]>([]);

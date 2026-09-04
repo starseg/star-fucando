@@ -1,4 +1,4 @@
-import type { TransportVoucher, TransportModal, Employee } from "@prisma/client";
+import type { TransportVoucher, TransportModal, Employee, Prisma } from "@prisma/client";
 
 export interface TransportVoucherPageParams {
   search?: string;
@@ -33,7 +33,7 @@ export interface RecalculatedModalInput {
 
 export interface ITransportVoucherRepository {
   countTransportVouchersInRange(search: string | undefined, start: Date, end: Date): Promise<number>;
-  sumTransportVouchersInRange(search: string | undefined, start: Date, end: Date): Promise<{ _sum: { totalValue: number | null; totalVouchers: number | null } } | any>;
+  sumTransportVouchersInRange(search: string | undefined, start: Date, end: Date): Promise<{ _sum: { totalValue: Prisma.Decimal | null; totalVouchers: number | null } }>;
   findTransportVouchersPage(params: TransportVoucherPageParams): Promise<(TransportVoucher & { employee: Employee; modals: TransportModal[] })[]>;
   createTransportVoucherWithModals(
     fields: TransportVoucherFieldsInput,

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
-import { copyAttendanceAwards } from "@/application/attendance-award/attendance-award-actions";
+import { copyAttendanceAwards } from "@/application/attendance-award/use-cases/copy-attendance-awards";
 
 interface AttendanceAwardCopyButtonProps {
   targetMonth: number;

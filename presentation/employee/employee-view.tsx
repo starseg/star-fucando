@@ -6,7 +6,7 @@ import { StatsCard } from "@/presentation/shared/stats-card";
 import { RefreshButton } from "@/presentation/shared/refresh-button";
 import { DataTablePagination } from "@/presentation/shared/data-table-pagination";
 import { Users, Building } from "lucide-react";
-import { getEmployeesPage } from "@/application/employee/employee-actions";
+import { getEmployeesPage } from "@/application/employee/use-cases/get-employees-page";
 
 interface EmployeeViewProps {
   searchQuery?: string;

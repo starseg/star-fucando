@@ -3,10 +3,8 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Bus } from "lucide-react";
-import {
-  deleteTransportVoucher,
-  copyTransportVouchers,
-} from "@/application/transport-voucher/transport-voucher-actions";
+import { deleteTransportVoucher } from "@/application/transport-voucher/use-cases/delete-transport-voucher";
+import { copyTransportVouchers } from "@/application/transport-voucher/use-cases/copy-transport-vouchers";
 import { DataTable } from "@/presentation/shared/data-table";
 import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
@@ -50,19 +48,28 @@ interface TransportVoucherTableProps {
   year: number;
 }
 
-export function TransportVoucherTable({ vouchers, month, year }: TransportVoucherTableProps) {
+export function TransportVoucherTable({
+  vouchers,
+  month,
+  year,
+}: TransportVoucherTableProps) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
-  const [editingVoucher, setEditingVoucher] = React.useState<TransportVoucherData | null>(null);
+  const [editingVoucher, setEditingVoucher] =
+    React.useState<TransportVoucherData | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
-  const [voucherToDelete, setVoucherToDelete] = React.useState<TransportVoucherData | null>(null);
+  const [voucherToDelete, setVoucherToDelete] =
+    React.useState<TransportVoucherData | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
-  const allSelected = vouchers.length > 0 && selectedIds.length === vouchers.length;
+  const allSelected =
+    vouchers.length > 0 && selectedIds.length === vouchers.length;
 
   const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
   };
 
   const toggleSelectAll = (checked: boolean) => {
@@ -105,10 +112,15 @@ export function TransportVoucherTable({ vouchers, month, year }: TransportVouche
 
   const printAccountingReport = (ids: string[]) => {
     if (ids.length === 0) {
-      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      toast.warning(
+        "Selecione pelo menos um lançamento para imprimir o relatório.",
+      );
       return;
     }
-    window.open(`/imprimir-contabilidade?tipo=transporte&ids=${ids.join(",")}&mes=${month}&ano=${year}`, "_blank");
+    window.open(
+      `/imprimir-contabilidade?tipo=transporte&ids=${ids.join(",")}&mes=${month}&ano=${year}`,
+      "_blank",
+    );
   };
 
   if (vouchers.length === 0) {
@@ -140,12 +152,21 @@ export function TransportVoucherTable({ vouchers, month, year }: TransportVouche
     <>
       <DataTable.Root>
         <DataTable.Header>
-          <DataTable.SelectAllCell checked={allSelected} onCheckedChange={toggleSelectAll} />
+          <DataTable.SelectAllCell
+            checked={allSelected}
+            onCheckedChange={toggleSelectAll}
+          />
           <DataTable.HeadCell>Colaborador</DataTable.HeadCell>
           <DataTable.HeadCell>Dias Úteis / Trajeto</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-center">Qtd. Vales</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right">Valor Total</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right w-36">Ações</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-center">
+            Qtd. Vales
+          </DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right">
+            Valor Total
+          </DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right w-36">
+            Ações
+          </DataTable.HeadCell>
         </DataTable.Header>
         <DataTable.Body>
           {vouchers.map((voucher) => (

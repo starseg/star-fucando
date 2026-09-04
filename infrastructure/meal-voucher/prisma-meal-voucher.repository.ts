@@ -1,6 +1,5 @@
 import { prisma } from "@/infrastructure/db/prisma";
 import type { MealVoucher } from "@prisma/client";
-import { unstable_cache } from "next/cache";
 import {
   IMealVoucherRepository,
   MealVoucherPageParams,

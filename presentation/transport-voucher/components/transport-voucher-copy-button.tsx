@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
-import { copyTransportVouchers } from "@/application/transport-voucher/transport-voucher-actions";
+import { copyTransportVouchers } from "@/application/transport-voucher/use-cases/copy-transport-vouchers";
 
 interface TransportVoucherCopyButtonProps {
   targetMonth: number;
   targetYear: number;
 }
 
-export function TransportVoucherCopyButton({ targetMonth, targetYear }: TransportVoucherCopyButtonProps) {
+export function TransportVoucherCopyButton({
+  targetMonth,
+  targetYear,
+}: TransportVoucherCopyButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(false);
 

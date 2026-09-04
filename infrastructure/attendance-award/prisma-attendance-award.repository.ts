@@ -5,7 +5,6 @@ import {
   AttendanceAwardRecordInput,
   IAttendanceAwardRepository,
 } from "@/domain/attendance-award/attendance-award.repository.interface";
-import { unstable_cache } from "next/cache";
 
 export class PrismaAttendanceAwardRepository implements IAttendanceAwardRepository {
   private buildAttendanceAwardSearchWhere(search?: string) {

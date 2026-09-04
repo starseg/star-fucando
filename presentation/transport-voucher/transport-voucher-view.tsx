@@ -8,7 +8,7 @@ import { RefreshButton } from "@/presentation/shared/refresh-button";
 import { EntitySearchBar } from "@/presentation/shared/entity-search-bar";
 import { DataTablePagination } from "@/presentation/shared/data-table-pagination";
 import { Bus, Users, Ticket, DollarSign } from "lucide-react";
-import { getTransportVouchersPage } from "@/application/transport-voucher/transport-voucher-actions";
+import { getTransportVouchersPage } from "@/application/transport-voucher/use-cases/get-transport-vouchers-page";
 import { formatCurrency } from "@/lib/utils";
 
 interface TransportVoucherViewProps {
@@ -18,12 +18,26 @@ interface TransportVoucherViewProps {
   page?: number;
 }
 
-export async function TransportVoucherView({ searchQuery, month, year, page = 1 }: TransportVoucherViewProps) {
-  const result = await getTransportVouchersPage({ search: searchQuery, month, year, page });
-  const vouchers = result.success ? result.data ?? [] : [];
+export async function TransportVoucherView({
+  searchQuery,
+  month,
+  year,
+  page = 1,
+}: TransportVoucherViewProps) {
+  const result = await getTransportVouchersPage({
+    search: searchQuery,
+    month,
+    year,
+    page,
+  });
+  const vouchers = result.success ? (result.data ?? []) : [];
   const pagination = result.success ? result.pagination : undefined;
   const stats = result.success
-    ? result.stats ?? { totalValueSum: 0, employeesCount: 0, totalVouchersCount: 0 }
+    ? (result.stats ?? {
+        totalValueSum: 0,
+        employeesCount: 0,
+        totalVouchersCount: 0,
+      })
     : { totalValueSum: 0, employeesCount: 0, totalVouchersCount: 0 };
 
   return (
@@ -34,7 +48,9 @@ export async function TransportVoucherView({ searchQuery, month, year, page = 1 
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Bus className="h-4 w-4" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-stone-100">Vale Transporte</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-stone-100">
+              Vale Transporte
+            </h1>
           </div>
           <p className="mt-1 text-xs text-stone-400">
             Lançamentos, controle de tarifas e emissão simplificada de recibos.
@@ -44,7 +60,10 @@ export async function TransportVoucherView({ searchQuery, month, year, page = 1 
         <div className="flex items-center gap-2.5 flex-wrap">
           <MonthNavigatorUrl month={month} year={year} />
           <TransportVoucherCopyButton targetMonth={month} targetYear={year} />
-          <TransportVoucherCreateButton defaultMonth={month} defaultYear={year} />
+          <TransportVoucherCreateButton
+            defaultMonth={month}
+            defaultYear={year}
+          />
         </div>
       </div>
 
@@ -73,7 +92,10 @@ export async function TransportVoucherView({ searchQuery, month, year, page = 1 
       </div>
 
       <div className="flex flex-col sm:flex-row items-center gap-3">
-        <EntitySearchBar initialQuery={searchQuery} placeholder="Buscar por nome, cargo ou departamento..." />
+        <EntitySearchBar
+          initialQuery={searchQuery}
+          placeholder="Buscar por nome, cargo ou departamento..."
+        />
         <RefreshButton />
       </div>
 
@@ -85,7 +107,12 @@ export async function TransportVoucherView({ searchQuery, month, year, page = 1 
 
       <TransportVoucherTable vouchers={vouchers} month={month} year={year} />
 
-      {pagination && <DataTablePagination page={pagination.page} totalPages={pagination.totalPages} />}
+      {pagination && (
+        <DataTablePagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+        />
+      )}
     </div>
   );
 }

@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/select";
 import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
 import { EntityDialogFooter } from "@/presentation/shared/dialog/entity-dialog-footer";
-import { upsertAttendanceAward, AttendanceAwardInput } from "@/application/attendance-award/attendance-award-actions";
-import { getEmployeeOptions } from "@/application/employee/employee-actions";
+import { upsertAttendanceAward } from "@/application/attendance-award/use-cases/upsert-attendance-award";
+import { AttendanceAwardInput } from "@/application/attendance-award/attendance-award-dto";
+import { getEmployeeOptions } from "@/application/employee/use-cases/get-employee-options";
 import { AttendanceAwardData } from "./attendance-award-table";
 import { toast } from "sonner";
 import { Award, Sparkles } from "lucide-react";
