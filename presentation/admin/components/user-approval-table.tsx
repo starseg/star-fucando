@@ -71,11 +71,17 @@ function getStatusBadge(status: UserStatus) {
 
 export function UserApprovalTable({ users, currentUserId }: UserApprovalTableProps) {
   const router = useRouter();
-  const onSettled = () => router.refresh();
+  const refreshDataAfterMutation = () => router.refresh();
 
-  const { processingId: approvingId, run: runApprove } = useConfirmedRowAction({ onSettled });
-  const { processingId: rejectingId, run: runReject } = useConfirmedRowAction({ onSettled });
-  const { processingId: togglingRoleId, run: runToggleRole } = useConfirmedRowAction({ onSettled });
+  const { processingId: approvingId, run: runApprove } = useConfirmedRowAction({
+    onSettled: refreshDataAfterMutation,
+  });
+  const { processingId: rejectingId, run: runReject } = useConfirmedRowAction({
+    onSettled: refreshDataAfterMutation,
+  });
+  const { processingId: togglingRoleId, run: runToggleRole } = useConfirmedRowAction({
+    onSettled: refreshDataAfterMutation,
+  });
 
   const approveUserRow = (user: UserApprovalItem) =>
     runApprove({

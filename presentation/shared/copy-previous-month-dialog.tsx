@@ -82,7 +82,7 @@ export function CopyPreviousMonthDialog({
     },
   }[accentColor];
 
-  const handleConfirm = async () => {
+  const executeCopyProcess = async () => {
     if (sourceMonth === targetMonth && sourceYear === targetYear) {
       toast.error("O mês de origem não pode ser igual ao mês de destino.");
       return;
@@ -219,7 +219,7 @@ export function CopyPreviousMonthDialog({
             </Button>
             <Button
               type="button"
-              onClick={handleConfirm}
+              onClick={executeCopyProcess}
               disabled={isLoading}
               className={`font-bold px-5 rounded-xl shadow-md ${colorStyles.button}`}
             >

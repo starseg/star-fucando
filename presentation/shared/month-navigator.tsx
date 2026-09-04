@@ -26,7 +26,7 @@ const MONTH_NAMES = [
 ];
 
 export function MonthNavigator({ month, year, onChange }: MonthNavigatorProps) {
-  const handlePrev = () => {
+  const goToPreviousMonth = () => {
     if (month === 1) {
       onChange(12, year - 1);
     } else {
@@ -34,7 +34,7 @@ export function MonthNavigator({ month, year, onChange }: MonthNavigatorProps) {
     }
   };
 
-  const handleNext = () => {
+  const goToNextMonth = () => {
     if (month === 12) {
       onChange(1, year + 1);
     } else {
@@ -42,7 +42,7 @@ export function MonthNavigator({ month, year, onChange }: MonthNavigatorProps) {
     }
   };
 
-  const handleCurrent = () => {
+  const goToCurrentMonth = () => {
     const now = new Date();
     onChange(now.getMonth() + 1, now.getFullYear());
   };
@@ -57,7 +57,7 @@ export function MonthNavigator({ month, year, onChange }: MonthNavigatorProps) {
       <Button
         variant="ghost"
         size="icon"
-        onClick={handlePrev}
+        onClick={goToPreviousMonth}
         className="h-8 w-8 text-stone-400 hover:bg-stone-800 hover:text-stone-100 rounded-lg"
         title="Mês anterior"
       >
@@ -74,7 +74,7 @@ export function MonthNavigator({ month, year, onChange }: MonthNavigatorProps) {
       <Button
         variant="ghost"
         size="icon"
-        onClick={handleNext}
+        onClick={goToNextMonth}
         className="h-8 w-8 text-stone-400 hover:bg-stone-800 hover:text-stone-100 rounded-lg"
         title="Próximo mês"
       >
@@ -85,7 +85,7 @@ export function MonthNavigator({ month, year, onChange }: MonthNavigatorProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={handleCurrent}
+          onClick={goToCurrentMonth}
           className="h-7 text-xs border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-300 ml-1 rounded-lg px-2"
         >
           Mês Atual

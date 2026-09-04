@@ -1,88 +1,35 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
-import { getTransportVouchersForPrint } from "@/application/transport-voucher/transport-voucher-actions";
-import { getMealVouchersForPrint } from "@/application/meal-voucher/meal-voucher-actions";
-import { getAttendanceAwardsForPrint } from "@/application/attendance-award/attendance-award-actions";
 import { TransportReceipt } from "./components/transport-receipt";
 import { MealReceipt } from "./components/meal-receipt";
 import { AttendanceReceipt } from "./components/attendance-receipt";
 import { Button } from "@/components/ui/button";
-import { Printer, ArrowLeft, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Printer, ArrowLeft } from "lucide-react";
 
 type TransportPrintItem = React.ComponentProps<typeof TransportReceipt>["voucher"];
 type MealPrintItem = React.ComponentProps<typeof MealReceipt>["voucher"];
 type AttendancePrintItem = React.ComponentProps<typeof AttendanceReceipt>["award"];
-type PrintItem = TransportPrintItem | MealPrintItem | AttendancePrintItem;
+export type PrintItem = TransportPrintItem | MealPrintItem | AttendancePrintItem;
 
-export function PrintView() {
-  const searchParams = useSearchParams();
-  const tipo = searchParams.get("tipo");
-  const idsParam = searchParams.get("ids");
+interface PrintViewProps {
+  tipo: string | undefined;
+  data: PrintItem[];
+}
 
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [data, setData] = React.useState<PrintItem[]>([]);
-
+export function PrintView({ tipo, data }: PrintViewProps) {
   React.useEffect(() => {
-    async function loadData() {
-      if (!idsParam || !tipo) {
-        setIsLoading(false);
-        return;
-      }
-
-      const ids = idsParam.split(",").filter(Boolean);
-      if (ids.length === 0) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        if (tipo === "transporte") {
-          const res = await getTransportVouchersForPrint(ids);
-          if (res.success && res.data) setData(res.data as unknown as TransportPrintItem[]);
-        } else if (tipo === "alimentacao") {
-          const res = await getMealVouchersForPrint(ids);
-          if (res.success && res.data) setData(res.data as unknown as MealPrintItem[]);
-        } else if (tipo === "assiduidade") {
-          const res = await getAttendanceAwardsForPrint(ids);
-          if (res.success && res.data) setData(res.data as unknown as AttendancePrintItem[]);
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Erro ao carregar dados para impressão.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadData();
-  }, [tipo, idsParam]);
-
-  // Dispara a impressão automaticamente assim que carregar
-  React.useEffect(() => {
-    if (!isLoading && data.length > 0) {
+    if (data.length > 0) {
       const timer = setTimeout(() => {
         window.print();
       }, 600);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, data]);
+  }, [data]);
 
   const triggerBrowserPrint = () => {
     window.print();
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center bg-stone-950 text-stone-100">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-3" />
-        <p className="text-sm text-stone-400">Preparando recibos para impressão...</p>
-      </div>
-    );
-  }
 
   if (!tipo || data.length === 0) {
     return (

@@ -1,6 +1,5 @@
 "use server";
 
-import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
 import { requireApprovedUser } from "@/application/auth/auth-guard";
 import { DomainError } from "@/domain/shared/errors/domain-error";
@@ -9,6 +8,10 @@ import { ReferenceMonthRequiredError } from "@/domain/shared/errors/reference-mo
 import { NoEntriesToCopyError } from "@/domain/shared/errors/no-entries-to-copy-error";
 import { assertDifferentReferenceMonth, toReferenceMonthRange } from "@/domain/shared/value-objects/reference-month";
 import { toPlainMoney } from "@/domain/shared/value-objects/money";
+import { PrismaAttendanceAwardRepository } from "@/infrastructure/attendance-award/prisma-attendance-award.repository";
+import { IAttendanceAwardRepository } from "@/domain/attendance-award/attendance-award.repository.interface";
+
+const repository: IAttendanceAwardRepository = new PrismaAttendanceAwardRepository();
 
 export interface AttendanceAwardInput {
   id?: string;
@@ -27,20 +30,6 @@ export interface GetAttendanceAwardsPageParams {
 
 const DEFAULT_PAGE_SIZE = 20;
 
-function buildAttendanceAwardSearchWhere(search?: string) {
-  return search
-    ? {
-        employee: {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { department: { contains: search, mode: "insensitive" as const } },
-            { role: { contains: search, mode: "insensitive" as const } },
-          ],
-        },
-      }
-    : {};
-}
-
 function serializeAward<T extends { bonusValue: unknown }>(award: T) {
   return { ...award, bonusValue: toPlainMoney(award.bonusValue) };
 }
@@ -57,33 +46,17 @@ export async function getAttendanceAwardsPage({
 
   try {
     const { start, end } = toReferenceMonthRange(month, year);
-    const where = {
-      referenceMonth: { gte: start, lt: end },
-      ...buildAttendanceAwardSearchWhere(search),
-    };
     const requestedPage = Number.isFinite(page) && page > 0 ? Math.trunc(page) : 1;
 
     const [total, aggregate] = await Promise.all([
-      prisma.attendanceAward.count({ where }),
-      prisma.attendanceAward.aggregate({ where, _sum: { bonusValue: true } }),
+      repository.countAttendanceAwardsInRange(search, start, end),
+      repository.sumAttendanceAwardsInRange(search, start, end),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const currentPage = Math.min(requestedPage, totalPages);
 
-    const awards = await prisma.attendanceAward.findMany({
-      where,
-      include: {
-        employee: true,
-      },
-      orderBy: {
-        employee: {
-          name: "asc",
-        },
-      },
-      skip: (currentPage - 1) * pageSize,
-      take: pageSize,
-    });
+    const awards = await repository.findAttendanceAwardsPage({ search, start, end, page: currentPage, pageSize });
 
     const totalBonusSum = toPlainMoney(aggregate._sum.bonusValue ?? 0);
 
@@ -116,35 +89,15 @@ export async function upsertAttendanceAward(input: AttendanceAwardInput) {
     if (!input.employeeId) throw new EmployeeRequiredError();
     if (!input.referenceMonth) throw new ReferenceMonthRequiredError();
 
-    const refDate = new Date(input.referenceMonth);
+    const recordInput = {
+      employeeId: input.employeeId,
+      referenceMonth: new Date(input.referenceMonth),
+      bonusValue: input.bonusValue,
+    };
 
-    if (input.id) {
-      const award = await prisma.attendanceAward.update({
-        where: { id: input.id },
-        data: {
-          employeeId: input.employeeId,
-          referenceMonth: refDate,
-          bonusValue: input.bonusValue,
-        },
-        include: {
-          employee: true,
-        },
-      });
-
-      revalidatePath("/assiduidade");
-      return { success: true, data: serializeAward(award) };
-    }
-
-    const award = await prisma.attendanceAward.create({
-      data: {
-        employeeId: input.employeeId,
-        referenceMonth: refDate,
-        bonusValue: input.bonusValue,
-      },
-      include: {
-        employee: true,
-      },
-    });
+    const award = input.id
+      ? await repository.updateAttendanceAwardRecord(input.id, recordInput)
+      : await repository.createAttendanceAwardRecord(recordInput);
 
     revalidatePath("/assiduidade");
     return { success: true, data: serializeAward(award) };
@@ -160,7 +113,7 @@ export async function deleteAttendanceAward(id: string) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    await prisma.attendanceAward.delete({ where: { id } });
+    await repository.deleteAttendanceAwardRecord(id);
     revalidatePath("/assiduidade");
     return { success: true };
   } catch (error) {
@@ -174,20 +127,7 @@ export async function getAttendanceAwardsForPrint(ids: string[]) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    const awards = await prisma.attendanceAward.findMany({
-      where: {
-        id: { in: ids },
-      },
-      include: {
-        employee: true,
-      },
-      orderBy: {
-        employee: {
-          name: "asc",
-        },
-      },
-    });
-
+    const awards = await repository.findAttendanceAwardsByIds(ids);
     return {
       success: true,
       data: awards.map((a) => serializeAward(a)),
@@ -213,39 +153,10 @@ export async function copyAttendanceAwards(
     const { start: srcStart, end: srcEnd } = toReferenceMonthRange(sourceMonth, sourceYear);
     const { start: targetStart, end: targetEnd } = toReferenceMonthRange(targetMonth, targetYear);
 
-    const sourceAwards = await prisma.attendanceAward.findMany({
-      where: {
-        referenceMonth: {
-          gte: srcStart,
-          lt: srcEnd,
-        },
-      },
-    });
-
+    const sourceAwards = await repository.findAttendanceAwardsInRange(srcStart, srcEnd);
     if (sourceAwards.length === 0) throw new NoEntriesToCopyError();
 
-    const createdCount = await prisma.$transaction(async (tx) => {
-      await tx.attendanceAward.deleteMany({
-        where: {
-          referenceMonth: {
-            gte: targetStart,
-            lt: targetEnd,
-          },
-        },
-      });
-
-      for (const a of sourceAwards) {
-        await tx.attendanceAward.create({
-          data: {
-            employeeId: a.employeeId,
-            referenceMonth: targetStart,
-            bonusValue: a.bonusValue,
-          },
-        });
-      }
-
-      return sourceAwards.length;
-    });
+    const createdCount = await repository.replaceAttendanceAwardsInRange(targetStart, targetEnd, sourceAwards);
 
     revalidatePath("/assiduidade");
     return { success: true, count: createdCount };

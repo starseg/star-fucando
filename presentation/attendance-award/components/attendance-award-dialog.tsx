@@ -49,32 +49,7 @@ export function AttendanceAwardDialog({
   defaultMonth,
   defaultYear,
 }: AttendanceAwardDialogProps) {
-  const [isLoading, setIsLoading] = React.useState(false);
   const [employees, setEmployees] = React.useState<{ id: string; name: string }[]>([]);
-
-  const defaultRefDate = React.useMemo(() => {
-    const year = defaultYear || new Date().getFullYear();
-    const month = String(defaultMonth || new Date().getMonth() + 1).padStart(2, "0");
-    return `${year}-${month}-01`;
-  }, [defaultMonth, defaultYear]);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<AttendanceAwardFormData>({
-    resolver: zodResolver(attendanceAwardSchema as any),
-    defaultValues: {
-      employeeId: "",
-      referenceMonth: defaultRefDate,
-      bonusValue: 300.0,
-    },
-  });
-
-  const watchedBonus = watch("bonusValue") || 0;
 
   React.useEffect(() => {
     async function loadEmployees() {
@@ -88,24 +63,83 @@ export function AttendanceAwardDialog({
     }
   }, [isOpen]);
 
-  React.useEffect(() => {
-    if (!isOpen) return;
-    if (awardToEdit) {
-      const refDateStr = new Date(awardToEdit.referenceMonth).toISOString().split("T")[0];
-      reset({
-        id: awardToEdit.id,
-        employeeId: awardToEdit.employeeId,
-        referenceMonth: refDateStr,
-        bonusValue: awardToEdit.bonusValue,
-      });
-    } else {
-      reset({
-        employeeId: "",
-        referenceMonth: defaultRefDate,
-        bonusValue: 300.0,
-      });
-    }
-  }, [awardToEdit, reset, defaultRefDate, isOpen]);
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <EntityDialogHeader
+          icon={Award}
+          title={awardToEdit ? "Editar Prêmio de Assiduidade" : "Novo Prêmio de Assiduidade"}
+          description="Lançamento de bonificação por assiduidade integral."
+          color="sky"
+        />
+
+        <AttendanceAwardForm
+          key={awardToEdit?.id ?? "novo"}
+          employees={employees}
+          awardToEdit={awardToEdit}
+          defaultMonth={defaultMonth}
+          defaultYear={defaultYear}
+          onSuccess={onSuccess}
+          onClose={onClose}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface AttendanceAwardFormProps {
+  employees: { id: string; name: string }[];
+  awardToEdit?: AttendanceAwardData | null;
+  defaultMonth?: number;
+  defaultYear?: number;
+  onSuccess: () => void;
+  onClose: () => void;
+}
+
+function buildDefaultRefDate(defaultMonth?: number, defaultYear?: number) {
+  const year = defaultYear || new Date().getFullYear();
+  const month = String(defaultMonth || new Date().getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+}
+
+function AttendanceAwardForm({
+  employees,
+  awardToEdit,
+  defaultMonth,
+  defaultYear,
+  onSuccess,
+  onClose,
+}: AttendanceAwardFormProps) {
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<AttendanceAwardFormData>({
+    resolver: zodResolver(attendanceAwardSchema),
+    defaultValues: awardToEdit
+      ? {
+          id: awardToEdit.id,
+          employeeId: awardToEdit.employeeId,
+          referenceMonth: new Date(awardToEdit.referenceMonth).toISOString().split("T")[0],
+          bonusValue: awardToEdit.bonusValue,
+        }
+      : {
+          employeeId: "",
+          referenceMonth: buildDefaultRefDate(defaultMonth, defaultYear),
+          bonusValue: 300.0,
+        },
+  });
+
+  const watchedBonus = watch("bonusValue") || 0;
 
   const persistAttendanceAward = async (data: AttendanceAwardFormData) => {
     setIsLoading(true);
@@ -134,85 +168,68 @@ export function AttendanceAwardDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
-      <DialogContent
-        className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        <EntityDialogHeader
-          icon={Award}
-          title={awardToEdit ? "Editar Prêmio de Assiduidade" : "Novo Prêmio de Assiduidade"}
-          description="Lançamento de bonificação por assiduidade integral."
-          color="sky"
+    <form onSubmit={handleSubmit(persistAttendanceAward)} className="space-y-4 pt-2">
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-stone-300">Colaborador *</Label>
+        <Select
+          value={watch("employeeId")}
+          onValueChange={(val) => setValue("employeeId", val)}
+        >
+          <SelectTrigger className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl">
+            <SelectValue placeholder="Selecione o colaborador" />
+          </SelectTrigger>
+          <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
+            {employees.map((emp) => (
+              <SelectItem key={emp.id} value={emp.id}>
+                {emp.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.employeeId && (
+          <p className="text-xs text-red-400">{errors.employeeId.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-stone-300">Mês de Referência *</Label>
+        <Input
+          type="date"
+          {...register("referenceMonth")}
+          className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl"
         />
+      </div>
 
-        <form onSubmit={handleSubmit(persistAttendanceAward)} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-stone-300">Colaborador *</Label>
-            <Select
-              value={watch("employeeId")}
-              onValueChange={(val) => setValue("employeeId", val)}
-            >
-              <SelectTrigger className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl">
-                <SelectValue placeholder="Selecione o colaborador" />
-              </SelectTrigger>
-              <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-                {employees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.employeeId && (
-              <p className="text-xs text-red-400">{errors.employeeId.message}</p>
-            )}
-          </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-stone-300">Valor da Bonificação (R$) *</Label>
+        <Input
+          type="number"
+          step="0.01"
+          placeholder="Ex: 300,00"
+          {...register("bonusValue")}
+          className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl font-semibold"
+        />
+        {errors.bonusValue && (
+          <p className="text-xs text-red-400">{errors.bonusValue.message}</p>
+        )}
+      </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-stone-300">Mês de Referência *</Label>
-            <Input
-              type="date"
-              {...register("referenceMonth")}
-              className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl"
-            />
-          </div>
+      <div className="rounded-xl bg-sky-500/10 border border-sky-500/25 p-4 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5" />
+          Valor da Premiação
+        </span>
+        <span className="text-2xl font-black text-sky-400">
+          {formatCurrency(watchedBonus)}
+        </span>
+      </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-stone-300">Valor da Bonificação (R$) *</Label>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="Ex: 300,00"
-              {...register("bonusValue")}
-              className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl font-semibold"
-            />
-            {errors.bonusValue && (
-              <p className="text-xs text-red-400">{errors.bonusValue.message}</p>
-            )}
-          </div>
-
-          {/* Destaque do Valor da Bonificação */}
-          <div className="rounded-xl bg-sky-500/10 border border-sky-500/25 p-4 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              Valor da Premiação
-            </span>
-            <span className="text-2xl font-black text-sky-400">
-              {formatCurrency(watchedBonus)}
-            </span>
-          </div>
-
-          <EntityDialogFooter
-            onCancel={onClose}
-            isSubmitting={isLoading}
-            submitLabel={awardToEdit ? "Salvar Alterações" : "Cadastrar Premiação"}
-            color="sky"
-          />
-        </form>
-      </DialogContent>
-    </Dialog>
+      <EntityDialogFooter
+        onCancel={onClose}
+        isSubmitting={isLoading}
+        submitLabel={awardToEdit ? "Salvar Alterações" : "Cadastrar Premiação"}
+        color="sky"
+      />
+    </form>
   );
 }

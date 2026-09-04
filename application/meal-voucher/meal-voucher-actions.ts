@@ -1,6 +1,5 @@
 "use server";
 
-import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
 import { requireApprovedUser } from "@/application/auth/auth-guard";
 import { DomainError } from "@/domain/shared/errors/domain-error";
@@ -10,6 +9,10 @@ import { NoEntriesToCopyError } from "@/domain/shared/errors/no-entries-to-copy-
 import { assertDifferentReferenceMonth, toReferenceMonthRange } from "@/domain/shared/value-objects/reference-month";
 import { toPlainMoney } from "@/domain/shared/value-objects/money";
 import { calculateNetValue } from "@/domain/meal-voucher/value-objects/meal-voucher-net-value";
+import { IMealVoucherRepository } from "@/domain/meal-voucher/meal-voucher.repository.interface";
+import { PrismaMealVoucherRepository } from "@/infrastructure/meal-voucher/prisma-meal-voucher.repository";
+
+const repository: IMealVoucherRepository = new PrismaMealVoucherRepository();
 
 export interface MealVoucherInput {
   id?: string;
@@ -31,20 +34,6 @@ export interface GetMealVouchersPageParams {
 }
 
 const DEFAULT_PAGE_SIZE = 20;
-
-function buildMealVoucherSearchWhere(search?: string) {
-  return search
-    ? {
-        employee: {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { department: { contains: search, mode: "insensitive" as const } },
-            { role: { contains: search, mode: "insensitive" as const } },
-          ],
-        },
-      }
-    : {};
-}
 
 function serializeVoucher<T extends { unitValue: unknown; totalValue: unknown; discounts: unknown }>(voucher: T) {
   const totalValue = toPlainMoney(voucher.totalValue);
@@ -70,36 +59,17 @@ export async function getMealVouchersPage({
 
   try {
     const { start, end } = toReferenceMonthRange(month, year);
-    const where = {
-      referenceMonth: { gte: start, lt: end },
-      ...buildMealVoucherSearchWhere(search),
-    };
     const requestedPage = Number.isFinite(page) && page > 0 ? Math.trunc(page) : 1;
 
     const [total, aggregate] = await Promise.all([
-      prisma.mealVoucher.count({ where }),
-      prisma.mealVoucher.aggregate({
-        where,
-        _sum: { totalValue: true, discounts: true, workedDays: true },
-      }),
+      repository.countMealVouchersInRange(search, start, end),
+      repository.sumMealVouchersInRange(search, start, end),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const currentPage = Math.min(requestedPage, totalPages);
 
-    const vouchers = await prisma.mealVoucher.findMany({
-      where,
-      include: {
-        employee: true,
-      },
-      orderBy: {
-        employee: {
-          name: "asc",
-        },
-      },
-      skip: (currentPage - 1) * pageSize,
-      take: pageSize,
-    });
+    const vouchers = await repository.findMealVouchersPage({ search, start, end, page: currentPage, pageSize });
 
     const grossSum = toPlainMoney(aggregate._sum.totalValue ?? 0);
     const discountsSum = toPlainMoney(aggregate._sum.discounts ?? 0);
@@ -133,43 +103,19 @@ export async function upsertMealVoucher(input: MealVoucherInput) {
     if (!input.employeeId) throw new EmployeeRequiredError();
     if (!input.referenceMonth) throw new ReferenceMonthRequiredError();
 
-    const refDate = new Date(input.referenceMonth);
+    const recordInput = {
+      employeeId: input.employeeId,
+      referenceMonth: new Date(input.referenceMonth),
+      unitValue: input.unitValue,
+      workedDays: input.workedDays,
+      voucherCount: input.voucherCount,
+      totalValue: input.totalValue,
+      discounts: input.discounts ?? 0,
+    };
 
-    if (input.id) {
-      const voucher = await prisma.mealVoucher.update({
-        where: { id: input.id },
-        data: {
-          employeeId: input.employeeId,
-          referenceMonth: refDate,
-          unitValue: input.unitValue,
-          workedDays: input.workedDays,
-          voucherCount: input.voucherCount,
-          totalValue: input.totalValue,
-          discounts: input.discounts ?? 0,
-        },
-        include: {
-          employee: true,
-        },
-      });
-
-      revalidatePath("/vale-alimentacao");
-      return { success: true, data: serializeVoucher(voucher) };
-    }
-
-    const voucher = await prisma.mealVoucher.create({
-      data: {
-        employeeId: input.employeeId,
-        referenceMonth: refDate,
-        unitValue: input.unitValue,
-        workedDays: input.workedDays,
-        voucherCount: input.voucherCount,
-        totalValue: input.totalValue,
-        discounts: input.discounts ?? 0,
-      },
-      include: {
-        employee: true,
-      },
-    });
+    const voucher = input.id
+      ? await repository.updateMealVoucherRecord(input.id, recordInput)
+      : await repository.createMealVoucherRecord(recordInput);
 
     revalidatePath("/vale-alimentacao");
     return { success: true, data: serializeVoucher(voucher) };
@@ -185,7 +131,7 @@ export async function deleteMealVoucher(id: string) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    await prisma.mealVoucher.delete({ where: { id } });
+    await repository.deleteMealVoucherRecord(id);
     revalidatePath("/vale-alimentacao");
     return { success: true };
   } catch (error) {
@@ -199,20 +145,7 @@ export async function getMealVouchersForPrint(ids: string[]) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    const vouchers = await prisma.mealVoucher.findMany({
-      where: {
-        id: { in: ids },
-      },
-      include: {
-        employee: true,
-      },
-      orderBy: {
-        employee: {
-          name: "asc",
-        },
-      },
-    });
-
+    const vouchers = await repository.findMealVouchersByIds(ids);
     return {
       success: true,
       data: vouchers.map((v) => serializeVoucher(v)),
@@ -238,43 +171,10 @@ export async function copyMealVouchers(
     const { start: srcStart, end: srcEnd } = toReferenceMonthRange(sourceMonth, sourceYear);
     const { start: targetStart, end: targetEnd } = toReferenceMonthRange(targetMonth, targetYear);
 
-    const sourceVouchers = await prisma.mealVoucher.findMany({
-      where: {
-        referenceMonth: {
-          gte: srcStart,
-          lt: srcEnd,
-        },
-      },
-    });
-
+    const sourceVouchers = await repository.findMealVouchersInRange(srcStart, srcEnd);
     if (sourceVouchers.length === 0) throw new NoEntriesToCopyError();
 
-    const createdCount = await prisma.$transaction(async (tx) => {
-      await tx.mealVoucher.deleteMany({
-        where: {
-          referenceMonth: {
-            gte: targetStart,
-            lt: targetEnd,
-          },
-        },
-      });
-
-      for (const v of sourceVouchers) {
-        await tx.mealVoucher.create({
-          data: {
-            employeeId: v.employeeId,
-            referenceMonth: targetStart,
-            unitValue: v.unitValue,
-            workedDays: v.workedDays,
-            voucherCount: v.voucherCount,
-            totalValue: v.totalValue,
-            discounts: v.discounts,
-          },
-        });
-      }
-
-      return sourceVouchers.length;
-    });
+    const createdCount = await repository.replaceMealVouchersInRange(targetStart, targetEnd, sourceVouchers);
 
     revalidatePath("/vale-alimentacao");
     return { success: true, count: createdCount };

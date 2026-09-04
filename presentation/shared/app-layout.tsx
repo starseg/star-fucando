@@ -19,31 +19,19 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSession, signOut } from "next-auth/react";
-import { getPendingCount } from "@/application/user/user-actions";
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  pendingCount: number;
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, pendingCount }: AppLayoutProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [pendingCount, setPendingCount] = React.useState(0);
 
   const isAdmin = session?.user?.role === "ADMIN";
   const user = session?.user;
-
-  // Busca contagem de pendências se for admin
-  React.useEffect(() => {
-    if (isAdmin) {
-      getPendingCount().then((res) => {
-        if (res.success && typeof res.count === "number") {
-          setPendingCount(res.count);
-        }
-      });
-    }
-  }, [isAdmin, pathname]);
 
   // Não renderiza sidebar na rota de impressão para não poluir
   const isPrintPage = pathname.startsWith("/imprimir");

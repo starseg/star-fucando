@@ -1,16 +1,19 @@
 "use server";
 
-import { prisma } from "@/infrastructure/db/prisma";
 import { revalidatePath } from "next/cache";
 import { requireApprovedUser } from "@/application/auth/auth-guard";
 import { Prisma } from "@prisma/client";
-import { z } from "zod";
 import { DomainError } from "@/domain/shared/errors/domain-error";
 import { NoEntriesToCopyError } from "@/domain/shared/errors/no-entries-to-copy-error";
 import { assertDifferentReferenceMonth, toReferenceMonthRange } from "@/domain/shared/value-objects/reference-month";
 import { toPlainMoney, toNullablePlainMoney } from "@/domain/shared/value-objects/money";
 import { recalculateModals } from "@/domain/transport-voucher/value-objects/transport-modal-calculator";
 import { DuplicateTransportVoucherError } from "@/domain/transport-voucher/errors/transport-voucher-errors";
+import { transportVoucherSchema, formatZodError } from "./transport-voucher.schema";
+import { ITransportVoucherRepository } from "@/domain/transport-voucher/transport-voucher.repository.interface";
+import { PrismaTransportVoucherRepository } from "@/infrastructure/transport-voucher/prisma-transport-voucher.repository";
+
+const repository: ITransportVoucherRepository = new PrismaTransportVoucherRepository();
 
 export interface TransportModalInput {
   id?: string;
@@ -46,46 +49,6 @@ export interface GetTransportVouchersPageParams {
 }
 
 const DEFAULT_PAGE_SIZE = 20;
-
-const transportModalSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().trim().min(1, "Nome do modal é obrigatório."),
-  unitValue: z.coerce.number().positive("Valor unitário deve ser maior que zero."),
-  quantity: z.coerce.number().int().min(1, "Quantidade deve ser maior ou igual a 1."),
-});
-
-const transportVoucherSchema = z.object({
-  employeeId: z.string().trim().min(1, "Colaborador é obrigatório."),
-  referenceMonth: z.string().trim().min(1, "Mês de referência é obrigatório."),
-  workingDays: z.coerce.number().int().min(0, "Dias úteis não pode ser negativo."),
-  weekendHolidayDays: z.coerce.number().int().min(0).optional().default(0),
-  weekendHolidayValue: z.coerce.number().min(0).nullable().optional().default(null),
-  nightJokerIndicator: z.coerce.boolean().optional().default(false),
-  discountPercentage: z.coerce.number().min(0).max(100).nullable().optional().default(null),
-  observations: z.string().nullable().optional(),
-  modals: z.array(transportModalSchema).min(1, "Adicione pelo menos um modal."),
-});
-
-function formatZodError(error: z.ZodError): string {
-  const messages = error.issues.map((issue) => issue.message);
-  return messages.length > 0
-    ? messages.join(" ")
-    : "Dados inválidos para o vale transporte.";
-}
-
-function buildTransportVoucherSearchWhere(search?: string) {
-  return search
-    ? {
-        employee: {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { department: { contains: search, mode: "insensitive" as const } },
-            { role: { contains: search, mode: "insensitive" as const } },
-          ],
-        },
-      }
-    : {};
-}
 
 interface SerializedTransportModal {
   id: string;
@@ -149,37 +112,17 @@ export async function getTransportVouchersPage({
 
   try {
     const { start, end } = toReferenceMonthRange(month, year);
-    const where = {
-      referenceMonth: { gte: start, lt: end },
-      ...buildTransportVoucherSearchWhere(search),
-    };
     const requestedPage = Number.isFinite(page) && page > 0 ? Math.trunc(page) : 1;
 
     const [total, aggregate] = await Promise.all([
-      prisma.transportVoucher.count({ where }),
-      prisma.transportVoucher.aggregate({
-        where,
-        _sum: { totalValue: true, totalVouchers: true },
-      }),
+      repository.countTransportVouchersInRange(search, start, end),
+      repository.sumTransportVouchersInRange(search, start, end),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const currentPage = Math.min(requestedPage, totalPages);
 
-    const vouchers = await prisma.transportVoucher.findMany({
-      where,
-      include: {
-        employee: true,
-        modals: true,
-      },
-      orderBy: {
-        employee: {
-          name: "asc",
-        },
-      },
-      skip: (currentPage - 1) * pageSize,
-      take: pageSize,
-    });
+    const vouchers = await repository.findTransportVouchersPage({ search, start, end, page: currentPage, pageSize });
 
     return {
       success: true,
@@ -216,105 +159,24 @@ export async function upsertTransportVoucher(input: TransportVoucherInput) {
     const { recalculated, totalVouchers, totalValue, inboundValue, outboundValue } =
       recalculateModals(parsed.data.modals);
 
-    // Se tiver ID, atualizamos
-    if (input.id) {
-      const voucher = await prisma.$transaction(async (tx) => {
-        const existingModals = await tx.transportModal.findMany({
-          where: { transportVoucherId: input.id },
-          select: { id: true },
-        });
-        const existingIds = new Set(existingModals.map((m) => m.id));
-        const incomingIds = new Set(
-          recalculated.filter((m) => m.id).map((m) => m.id as string)
-        );
+    const fields = {
+      employeeId: parsed.data.employeeId,
+      referenceMonth: refDate,
+      inboundValue,
+      outboundValue,
+      weekendHolidayValue: parsed.data.weekendHolidayValue,
+      workingDays: parsed.data.workingDays,
+      weekendHolidayDays: parsed.data.weekendHolidayDays,
+      nightJokerIndicator: parsed.data.nightJokerIndicator,
+      totalVouchers,
+      totalValue,
+      discountPercentage: parsed.data.discountPercentage,
+      observations: parsed.data.observations?.trim() || null,
+    };
 
-        const idsToDelete = [...existingIds].filter((id) => !incomingIds.has(id));
-        if (idsToDelete.length > 0) {
-          await tx.transportModal.deleteMany({
-            where: { id: { in: idsToDelete } },
-          });
-        }
-
-        for (const m of recalculated) {
-          if (m.id && existingIds.has(m.id)) {
-            await tx.transportModal.update({
-              where: { id: m.id },
-              data: {
-                name: m.name,
-                unitValue: m.unitValue,
-                quantity: m.quantity,
-                subtotal: m.subtotal,
-              },
-            });
-          } else {
-            await tx.transportModal.create({
-              data: {
-                transportVoucherId: input.id as string,
-                name: m.name,
-                unitValue: m.unitValue,
-                quantity: m.quantity,
-                subtotal: m.subtotal,
-              },
-            });
-          }
-        }
-
-        return await tx.transportVoucher.update({
-          where: { id: input.id },
-          data: {
-            employeeId: parsed.data.employeeId,
-            referenceMonth: refDate,
-            inboundValue,
-            outboundValue,
-            weekendHolidayValue: parsed.data.weekendHolidayValue,
-            workingDays: parsed.data.workingDays,
-            weekendHolidayDays: parsed.data.weekendHolidayDays,
-            nightJokerIndicator: parsed.data.nightJokerIndicator,
-            totalVouchers,
-            totalValue,
-            discountPercentage: parsed.data.discountPercentage,
-            observations: parsed.data.observations?.trim() || null,
-          },
-          include: {
-            employee: true,
-            modals: true,
-          },
-        });
-      });
-
-      revalidatePath("/vale-transporte");
-      return { success: true, data: serializeVoucher(voucher) };
-    }
-
-    // Caso contrário, criamos um novo
-    const voucher = await prisma.transportVoucher.create({
-      data: {
-        employeeId: parsed.data.employeeId,
-        referenceMonth: refDate,
-        inboundValue,
-        outboundValue,
-        weekendHolidayValue: parsed.data.weekendHolidayValue,
-        workingDays: parsed.data.workingDays,
-        weekendHolidayDays: parsed.data.weekendHolidayDays,
-        nightJokerIndicator: parsed.data.nightJokerIndicator,
-        totalVouchers,
-        totalValue,
-        discountPercentage: parsed.data.discountPercentage,
-        observations: parsed.data.observations?.trim() || null,
-        modals: {
-          create: recalculated.map((m) => ({
-            name: m.name,
-            unitValue: m.unitValue,
-            quantity: m.quantity,
-            subtotal: m.subtotal,
-          })),
-        },
-      },
-      include: {
-        employee: true,
-        modals: true,
-      },
-    });
+    const voucher = input.id
+      ? await repository.updateTransportVoucherWithModals(input.id, fields, recalculated)
+      : await repository.createTransportVoucherWithModals(fields, recalculated);
 
     revalidatePath("/vale-transporte");
     return { success: true, data: serializeVoucher(voucher) };
@@ -335,8 +197,7 @@ export async function deleteTransportVoucher(id: string) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    await prisma.transportModal.deleteMany({ where: { transportVoucherId: id } });
-    await prisma.transportVoucher.delete({ where: { id } });
+    await repository.deleteTransportVoucherCascade(id);
 
     revalidatePath("/vale-transporte");
     return { success: true };
@@ -351,20 +212,7 @@ export async function getTransportVouchersForPrint(ids: string[]) {
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
-    const vouchers = await prisma.transportVoucher.findMany({
-      where: {
-        id: { in: ids },
-      },
-      include: {
-        employee: true,
-        modals: true,
-      },
-      orderBy: {
-        employee: {
-          name: "asc",
-        },
-      },
-    });
+    const vouchers = await repository.findTransportVouchersByIds(ids);
 
     return {
       success: true,
@@ -391,70 +239,11 @@ export async function copyTransportVouchers(
     const { start: srcStart, end: srcEnd } = toReferenceMonthRange(sourceMonth, sourceYear);
     const { start: targetStart, end: targetEnd } = toReferenceMonthRange(targetMonth, targetYear);
 
-    const sourceVouchers = await prisma.transportVoucher.findMany({
-      where: {
-        referenceMonth: {
-          gte: srcStart,
-          lt: srcEnd,
-        },
-      },
-      include: {
-        modals: true,
-      },
-    });
+    const sourceVouchers = await repository.findTransportVouchersInRange(srcStart, srcEnd);
 
     if (sourceVouchers.length === 0) throw new NoEntriesToCopyError();
 
-    const createdCount = await prisma.$transaction(async (tx) => {
-      const existing = await tx.transportVoucher.findMany({
-        where: {
-          referenceMonth: {
-            gte: targetStart,
-            lt: targetEnd,
-          },
-        },
-        select: { id: true },
-      });
-
-      const existingIds = existing.map((e) => e.id);
-      if (existingIds.length > 0) {
-        await tx.transportModal.deleteMany({
-          where: { transportVoucherId: { in: existingIds } },
-        });
-        await tx.transportVoucher.deleteMany({
-          where: { id: { in: existingIds } },
-        });
-      }
-
-      for (const v of sourceVouchers) {
-        await tx.transportVoucher.create({
-          data: {
-            employeeId: v.employeeId,
-            referenceMonth: targetStart,
-            inboundValue: v.inboundValue,
-            outboundValue: v.outboundValue,
-            weekendHolidayValue: v.weekendHolidayValue,
-            workingDays: v.workingDays,
-            weekendHolidayDays: v.weekendHolidayDays,
-            nightJokerIndicator: v.nightJokerIndicator,
-            totalVouchers: v.totalVouchers,
-            totalValue: v.totalValue,
-            discountPercentage: v.discountPercentage,
-            observations: v.observations,
-            modals: {
-              create: v.modals.map((m) => ({
-                name: m.name,
-                unitValue: m.unitValue,
-                quantity: m.quantity,
-                subtotal: m.subtotal,
-              })),
-            },
-          },
-        });
-      }
-
-      return sourceVouchers.length;
-    });
+    const createdCount = await repository.replaceTransportVouchersInRange(targetStart, targetEnd, sourceVouchers);
 
     revalidatePath("/vale-transporte");
     return { success: true, count: createdCount };

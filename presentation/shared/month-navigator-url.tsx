@@ -14,7 +14,7 @@ export function MonthNavigatorUrl({ month, year }: MonthNavigatorUrlProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const handleChange = (newMonth: number, newYear: number) => {
+  const updateMonthFilter = (newMonth: number, newYear: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("mes", String(newMonth));
     params.set("ano", String(newYear));
@@ -22,5 +22,5 @@ export function MonthNavigatorUrl({ month, year }: MonthNavigatorUrlProps) {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  return <MonthNavigator month={month} year={year} onChange={handleChange} />;
+  return <MonthNavigator month={month} year={year} onChange={updateMonthFilter} />;
 }

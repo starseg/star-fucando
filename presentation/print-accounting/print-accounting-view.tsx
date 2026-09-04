@@ -1,24 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
-import { getTransportVouchersForPrint } from "@/application/transport-voucher/transport-voucher-actions";
-import { getMealVouchersForPrint } from "@/application/meal-voucher/meal-voucher-actions";
-import { getAttendanceAwardsForPrint } from "@/application/attendance-award/attendance-award-actions";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatMonthYear } from "@/lib/utils";
-import { Printer, ArrowLeft, Loader2, Bus, Utensils, Award, FileSpreadsheet } from "lucide-react";
-import { toast } from "sonner";
+import { formatMonthYear } from "@/lib/utils";
+import { Printer, ArrowLeft, Bus, Utensils, Award, FileSpreadsheet } from "lucide-react";
+import { PrintAccountingHeader } from "./components/print-accounting-header";
+import { PrintAccountingTable } from "./components/print-accounting-table";
+import { PrintAccountingSummaryFooter } from "./components/print-accounting-summary-footer";
 
-interface PrintAccountingItem {
+export interface PrintAccountingItem {
   id: string;
   referenceMonth?: Date | string;
   employee?: {
@@ -27,7 +17,6 @@ interface PrintAccountingItem {
     role?: string | null;
     pix?: string | null;
   };
-  // Vale Transporte
   workingDays?: number;
   modals?: { name: string }[];
   inboundValue?: number;
@@ -35,83 +24,60 @@ interface PrintAccountingItem {
   totalVouchers?: number;
   totalValue?: number;
   discountPercentage?: number | null;
-  // Vale Alimentação
   workedDays?: number;
   unitValue?: number;
   discounts?: number | null;
   netValue?: number;
-  // Prêmio Assiduidade
   bonusValue?: number;
 }
 
-export function PrintAccountingView() {
-  const searchParams = useSearchParams();
-  const tipo = searchParams.get("tipo");
-  const idsParam = searchParams.get("ids");
-  const mesParam = searchParams.get("mes");
-  const anoParam = searchParams.get("ano");
+interface PrintAccountingViewProps {
+  tipo: string | undefined;
+  data: PrintAccountingItem[];
+  mes?: string;
+  ano?: string;
+}
 
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [data, setData] = React.useState<PrintAccountingItem[]>([]);
+function getThemeConfig(tipo: string | undefined) {
+  switch (tipo) {
+    case "transporte":
+      return {
+        title: "Relatório de Vale Transporte",
+        badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        accentColor: "text-amber-400",
+        icon: Bus,
+      };
+    case "alimentacao":
+      return {
+        title: "Relatório de Vale Alimentação",
+        badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        accentColor: "text-emerald-400",
+        icon: Utensils,
+      };
+    case "assiduidade":
+    default:
+      return {
+        title: "Relatório de Prêmio Assiduidade",
+        badgeColor: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+        accentColor: "text-sky-400",
+        icon: Award,
+      };
+  }
+}
 
+export function PrintAccountingView({ tipo, data, mes, ano }: PrintAccountingViewProps) {
   React.useEffect(() => {
-    async function loadData() {
-      if (!idsParam || !tipo) {
-        setIsLoading(false);
-        return;
-      }
-
-      const ids = idsParam.split(",").filter(Boolean);
-      if (ids.length === 0) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        if (tipo === "transporte") {
-          const res = await getTransportVouchersForPrint(ids);
-          if (res.success && res.data) setData(res.data);
-        } else if (tipo === "alimentacao") {
-          const res = await getMealVouchersForPrint(ids);
-          if (res.success && res.data) setData(res.data);
-        } else if (tipo === "assiduidade") {
-          const res = await getAttendanceAwardsForPrint(ids);
-          if (res.success && res.data) setData(res.data);
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Erro ao carregar dados do relatório.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadData();
-  }, [tipo, idsParam]);
-
-  // Dispara a impressão automaticamente assim que carregar
-  React.useEffect(() => {
-    if (!isLoading && data.length > 0) {
+    if (data.length > 0) {
       const timer = setTimeout(() => {
         window.print();
       }, 700);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, data]);
+  }, [data]);
 
   const triggerBrowserPrint = () => {
     window.print();
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center bg-[#0d0c0a] text-stone-100">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-3" />
-        <p className="text-sm text-stone-400">Preparando relatório para a contabilidade...</p>
-      </div>
-    );
-  }
 
   if (!tipo || data.length === 0) {
     return (
@@ -130,38 +96,7 @@ export function PrintAccountingView() {
     );
   }
 
-  const getThemeConfig = () => {
-    switch (tipo) {
-      case "transporte":
-        return {
-          title: "Relatório de Vale Transporte",
-          badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-          accentColor: "text-amber-400",
-          icon: Bus,
-          summaryLabel: "Total de Vales / Passagens",
-        };
-      case "alimentacao":
-        return {
-          title: "Relatório de Vale Alimentação",
-          badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-          accentColor: "text-emerald-400",
-          icon: Utensils,
-          summaryLabel: "Total de Diárias",
-        };
-      case "assiduidade":
-      default:
-        return {
-          title: "Relatório de Prêmio Assiduidade",
-          badgeColor: "bg-sky-500/10 text-sky-400 border-sky-500/20",
-          accentColor: "text-sky-400",
-          icon: Award,
-          summaryLabel: "Colaboradores Premiados",
-        };
-    }
-  };
-
-  const theme = getThemeConfig();
-  const Icon = theme.icon;
+  const theme = getThemeConfig(tipo);
 
   const totalValueSum =
     tipo === "transporte"
@@ -173,8 +108,8 @@ export function PrintAccountingView() {
   const referenceDateFormatted =
     data[0]?.referenceMonth
       ? formatMonthYear(data[0].referenceMonth)
-      : mesParam && anoParam
-      ? formatMonthYear(new Date(Number(anoParam), Number(mesParam) - 1, 1))
+      : mes && ano
+      ? formatMonthYear(new Date(Number(ano), Number(mes) - 1, 1))
       : "";
 
   return (
@@ -232,216 +167,18 @@ export function PrintAccountingView() {
 
       <div className="print-container mx-auto max-w-5xl px-6 py-8">
         <div className="rounded-2xl border border-stone-800 bg-[#12100e] p-6 shadow-xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-stone-800/80">
-            <div className="flex items-center gap-3.5">
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${theme.badgeColor}`}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-xl font-bold text-stone-100 tracking-tight">
-                    {theme.title}
-                  </h1>
-                  <span className="text-xs uppercase px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    Contabilidade
-                  </span>
-                </div>
-                <p className="text-xs text-stone-400 mt-0.5">
-                  STAR SEG • Relatório consolidado de pagamentos de benefícios com chave PIX
-                </p>
-              </div>
-            </div>
+          <PrintAccountingHeader
+            title={theme.title}
+            icon={theme.icon}
+            badgeColor={theme.badgeColor}
+            accentColor={theme.accentColor}
+            totalValueSum={totalValueSum}
+            referenceDateFormatted={referenceDateFormatted}
+          />
 
-            <div className="flex items-center gap-4 text-right">
-              {referenceDateFormatted && (
-                <div className="px-3.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/60">
-                  <span className="text-[10px] uppercase font-bold text-stone-400 block">
-                    Competência
-                  </span>
-                  <span className="text-xs font-semibold text-stone-200 capitalize">
-                    {referenceDateFormatted}
-                  </span>
-                </div>
-              )}
-              <div className="px-3.5 py-1.5 rounded-xl border border-stone-800 bg-stone-900/60">
-                <span className="text-[10px] uppercase font-bold text-stone-400 block">
-                  Total Consolidado
-                </span>
-                <span className={`text-sm font-black ${theme.accentColor}`}>
-                  {formatCurrency(totalValueSum)}
-                </span>
-              </div>
-            </div>
-          </div>
+          <PrintAccountingTable tipo={tipo} data={data} badgeColor={theme.badgeColor} />
 
-          <div className="overflow-hidden rounded-xl border border-stone-800/90 bg-[#12100e]/80">
-            <Table>
-              <TableHeader className="bg-stone-950/90 border-b border-stone-800">
-                <TableRow className="border-none hover:bg-transparent">
-                  <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider pl-4">
-                    Colaborador
-                  </TableHead>
-
-                  {tipo === "transporte" && (
-                    <>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-                        Dias Úteis / Trajeto
-                      </TableHead>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-center">
-                        Qtd. Vales
-                      </TableHead>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right pr-4">
-                        Valor Total
-                      </TableHead>
-                    </>
-                  )}
-
-                  {tipo === "alimentacao" && (
-                    <>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-                        Dias / Diária
-                      </TableHead>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right">
-                        Total Bruto
-                      </TableHead>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right pr-4">
-                        Valor Líquido
-                      </TableHead>
-                    </>
-                  )}
-
-                  {tipo === "assiduidade" && (
-                    <>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
-                        Competência
-                      </TableHead>
-                      <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right pr-4">
-                        Valor da Bonificação
-                      </TableHead>
-                    </>
-                  )}
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {data.map((item) => {
-                  const emp = item.employee || {};
-                  return (
-                    <TableRow
-                      key={item.id}
-                      className="border-b border-stone-800/60 transition-colors hover:bg-stone-800/20"
-                    >
-                      <TableCell className="pl-4 py-3.5">
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black border mt-0.5 ${theme.badgeColor}`}
-                          >
-                            {(emp.name || "?").charAt(0).toUpperCase()}
-                          </div>
-                          <div className="space-y-1">
-                            <span className="font-bold text-stone-100 text-sm block">
-                              {emp.name}
-                            </span>
-                            <span className="text-xs text-stone-400 block">
-                              {emp.department || "Operacional"} • {emp.role || "Colaborador"}
-                            </span>
-                            <div className="pt-0.5">
-                              <span className="inline-flex items-center gap-1 font-mono text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
-                                <span className="font-sans font-semibold text-[10px] text-stone-400 uppercase">PIX:</span>
-                                {emp.pix ? emp.pix : "Não informado"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {tipo === "transporte" && (
-                        <>
-                          <TableCell className="py-3.5">
-                            <div className="space-y-0.5">
-                              <span className="text-sm font-semibold text-stone-200 block">
-                                {item.workingDays} dias úteis
-                              </span>
-                              <span className="text-xs text-stone-400">
-                                {(item.modals?.length ?? 0) > 2
-                                  ? `${item.modals?.length} transportes cadastrados`
-                                  : `Ida (${formatCurrency(item.inboundValue)}) + Volta (${formatCurrency(item.outboundValue)})`}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center font-bold text-stone-200 text-sm py-3.5">
-                            {item.totalVouchers} un.
-                          </TableCell>
-                          <TableCell className="text-right pr-4 py-3.5">
-                            <span className="text-base font-black text-amber-400 block">
-                              {formatCurrency(item.totalValue)}
-                            </span>
-                            {item.discountPercentage ? (
-                              <span className="text-[10px] text-stone-400">
-                                Desc. {item.discountPercentage}%
-                              </span>
-                            ) : null}
-                          </TableCell>
-                        </>
-                      )}
-
-                      {tipo === "alimentacao" && (
-                        <>
-                          <TableCell className="py-3.5">
-                            <div className="space-y-0.5">
-                              <span className="text-sm font-semibold text-stone-200 block">
-                                {item.workedDays} {item.workedDays === 1 ? "dia" : "dias"}
-                              </span>
-                              <span className="text-xs text-stone-400">
-                                Diária de {formatCurrency(item.unitValue)}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right py-3.5">
-                            <span className="text-sm font-semibold text-stone-300 block">
-                              {formatCurrency(item.totalValue)}
-                            </span>
-                            {(item.discounts ?? 0) > 0 && (
-                              <span className="text-[10px] text-red-400">
-                                Desc. -{formatCurrency(item.discounts)}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right pr-4 py-3.5">
-                            <span className="text-base font-black text-emerald-400 block">
-                              {formatCurrency(item.netValue)}
-                            </span>
-                          </TableCell>
-                        </>
-                      )}
-
-                      {tipo === "assiduidade" && (
-                        <>
-                          <TableCell className="text-xs font-medium text-stone-300 py-3.5">
-                            {formatMonthYear(item.referenceMonth)}
-                          </TableCell>
-                          <TableCell className="text-right pr-4 py-3.5">
-                            <span className="text-base font-black text-sky-400 block">
-                              {formatCurrency(item.bonusValue)}
-                            </span>
-                          </TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-stone-400">
-            <span>
-              Total de registros: <strong className="text-stone-200">{data.length} colaboradores</strong>
-            </span>
-            <span>
-              Relatório gerado em: <strong className="text-stone-200">{new Date().toLocaleDateString("pt-BR")}</strong>
-            </span>
-          </div>
+          <PrintAccountingSummaryFooter recordCount={data.length} />
         </div>
       </div>
     </div>
