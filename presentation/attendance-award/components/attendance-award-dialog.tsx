@@ -5,24 +5,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
 import { EntityDialogFooter } from "@/presentation/shared/dialog/entity-dialog-footer";
 import { upsertAttendanceAward } from "@/application/attendance-award/use-cases/upsert-attendance-award";
 import { AttendanceAwardInput } from "@/application/attendance-award/attendance-award-dto";
-import { getEmployeeOptions } from "@/application/employee/use-cases/get-employee-options";
 import { AttendanceAwardData } from "./attendance-award-table";
+import { AttendanceAwardEmployeeMonthFields } from "./attendance-award-employee-month-fields";
+import { AttendanceAwardBonusFields } from "./attendance-award-bonus-fields";
+import { useEmployeeOptions } from "@/presentation/shared/hooks/use-employee-options";
 import { toast } from "sonner";
-import { Award, Sparkles } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { Award } from "lucide-react";
 
 const attendanceAwardSchema = z.object({
   id: z.string().optional(),
@@ -31,7 +23,7 @@ const attendanceAwardSchema = z.object({
   bonusValue: z.coerce.number().min(0.01, "Informe o valor da bonificação"),
 });
 
-type AttendanceAwardFormData = z.infer<typeof attendanceAwardSchema>;
+export type AttendanceAwardFormData = z.infer<typeof attendanceAwardSchema>;
 
 interface AttendanceAwardDialogProps {
   isOpen: boolean;
@@ -50,19 +42,7 @@ export function AttendanceAwardDialog({
   defaultMonth,
   defaultYear,
 }: AttendanceAwardDialogProps) {
-  const [employees, setEmployees] = React.useState<{ id: string; name: string }[]>([]);
-
-  React.useEffect(() => {
-    async function loadEmployees() {
-      const res = await getEmployeeOptions();
-      if (res.success && res.data) {
-        setEmployees(res.data.map((e) => ({ id: e.id, name: e.name })));
-      }
-    }
-    if (isOpen) {
-      loadEmployees();
-    }
-  }, [isOpen]);
+  const employees = useEmployeeOptions(isOpen);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -170,60 +150,19 @@ function AttendanceAwardForm({
 
   return (
     <form onSubmit={handleSubmit(persistAttendanceAward)} className="space-y-4 pt-2">
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-stone-300">Colaborador *</Label>
-        <Select
-          value={watch("employeeId")}
-          onValueChange={(val) => setValue("employeeId", val)}
-        >
-          <SelectTrigger className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl">
-            <SelectValue placeholder="Selecione o colaborador" />
-          </SelectTrigger>
-          <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-            {employees.map((emp) => (
-              <SelectItem key={emp.id} value={emp.id}>
-                {emp.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.employeeId && (
-          <p className="text-xs text-red-400">{errors.employeeId.message}</p>
-        )}
-      </div>
+      <AttendanceAwardEmployeeMonthFields
+        employees={employees}
+        employeeId={watch("employeeId")}
+        onEmployeeIdChange={(val) => setValue("employeeId", val)}
+        employeeIdError={errors.employeeId?.message}
+        register={register}
+      />
 
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-stone-300">Mês de Referência *</Label>
-        <Input
-          type="date"
-          {...register("referenceMonth")}
-          className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-stone-300">Valor da Bonificação (R$) *</Label>
-        <Input
-          type="number"
-          step="0.01"
-          placeholder="Ex: 300,00"
-          {...register("bonusValue")}
-          className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl font-semibold"
-        />
-        {errors.bonusValue && (
-          <p className="text-xs text-red-400">{errors.bonusValue.message}</p>
-        )}
-      </div>
-
-      <div className="rounded-xl bg-sky-500/10 border border-sky-500/25 p-4 flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5" />
-          Valor da Premiação
-        </span>
-        <span className="text-2xl font-black text-sky-400">
-          {formatCurrency(watchedBonus)}
-        </span>
-      </div>
+      <AttendanceAwardBonusFields
+        register={register}
+        bonusError={errors.bonusValue?.message}
+        watchedBonus={watchedBonus}
+      />
 
       <EntityDialogFooter
         onCancel={onClose}
