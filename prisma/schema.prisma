@@ -166,15 +166,17 @@ model AttendanceAward {
 }
 
 model Commission {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   employeeId      String
-  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   referenceMonth  DateTime
+  startDate       DateTime?
+  endDate         DateTime?
 
-  commissionValue Decimal  @db.Decimal(10, 2)
+  commissionValue Decimal   @db.Decimal(10, 2)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@unique([employeeId, referenceMonth])
 }
