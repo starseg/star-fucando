@@ -7,6 +7,7 @@ const SELECTED_BACKGROUND: Record<DataTableAccentColor, string> = {
   amber: "bg-amber-500/10 hover:bg-amber-500/15",
   emerald: "bg-emerald-500/10 hover:bg-emerald-500/15",
   sky: "bg-sky-500/10 hover:bg-sky-500/15",
+  violet: "bg-violet-500/10 hover:bg-violet-500/15",
 };
 
 interface DataTableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {

@@ -10,6 +10,7 @@ async function main() {
   await prisma.transportVoucher.deleteMany();
   await prisma.mealVoucher.deleteMany();
   await prisma.attendanceAward.deleteMany();
+  await prisma.commission.deleteMany();
   await prisma.employee.deleteMany();
 
   console.log("🧹 Banco de dados limpo com sucesso.");
@@ -36,7 +37,7 @@ async function main() {
     { name: "Isaque Atolini Gaspar", department: "Técnico", role: "Técnico", admissionDate: parseDate("04/09/2025") },
     { name: "Janeci Evangelista", department: "Adm", role: "Administrativo", admissionDate: parseDate("03/08/2015") },
     { name: "Julia Cardoso Gelio", department: "Monitora", role: "Monitora", admissionDate: parseDate("15/01/2026") },
-    { name: "Lucas de Almeida de Souza", department: "TI", role: "Desenvolvedor / TI", admissionDate: parseDate("01/09/2015") },
+    { name: "Lucas Almeida de Souza", department: "TI", role: "Desenvolvedor / TI", admissionDate: parseDate("01/09/2015") },
     { name: "Lucas Miguel Biondi", department: "Operacional", role: "Operacional", admissionDate: parseDate("01/01/2024") },
     { name: "Marcella Poloni Pinto Mesquita", department: "Gestão", role: "Gestão", admissionDate: parseDate("16/08/2010") },
     { name: "Maybi Cristina Costa de Almeida", department: "Geral", role: "Serviços Gerais", admissionDate: parseDate("25/08/2023") },
@@ -96,7 +97,7 @@ async function main() {
       ],
     },
     {
-      employeeName: "Lucas de Almeida de Souza",
+      employeeName: "Lucas Almeida de Souza",
       inboundValue: 650.0,
       outboundValue: 0,
       weekendHolidayValue: 0,
@@ -218,7 +219,7 @@ async function main() {
     { employeeName: "Isaque Atolini Gaspar", bonusValue: 0 },
     { employeeName: "Janeci Evangelista", bonusValue: 225.0 },
     { employeeName: "Julia Cardoso Gelio", bonusValue: 225.0 },
-    { employeeName: "Lucas de Almeida de Souza", bonusValue: 0 },
+    { employeeName: "Lucas Almeida de Souza", bonusValue: 0 },
     { employeeName: "Marcella Poloni Pinto Mesquita", bonusValue: 300.0 },
     { employeeName: "Maybi Cristina Costa de Almeida", bonusValue: 225.0 },
     { employeeName: "Rafael Nogueira Barbosa Cruz", bonusValue: 0 },
@@ -242,6 +243,29 @@ async function main() {
   }
 
   console.log("✅ Prêmio de Assiduidade (abril/2026) criado.");
+
+  // 6. Seed — Comissões (Abril/2026)
+  const commissionsData = [
+    { employeeName: "Adolfo Bisceglia Atolini", commissionValue: 0 },
+    { employeeName: "Alan Junior Soares de Oliveira", commissionValue: 0 },
+    { employeeName: "Daniel Leonardi dos Santos", commissionValue: 0 },
+    { employeeName: "Rafael Nogueira Barbosa Cruz", commissionValue: 0 },
+  ];
+
+  for (const commission of commissionsData) {
+    const employeeId = employeeMap.get(commission.employeeName);
+    if (!employeeId) continue;
+
+    await prisma.commission.create({
+      data: {
+        employeeId,
+        referenceMonth: refApril2026,
+        commissionValue: commission.commissionValue,
+      },
+    });
+  }
+
+  console.log("✅ Comissões (abril/2026) criadas.");
   console.log("🎉 Seed com dados reais finalizado com sucesso!");
 }
 

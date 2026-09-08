@@ -8,7 +8,7 @@ export interface EmployeeSearchParams {
 
 export interface EmployeeRecordInput {
   name: string;
-  pix: string;
+  pix: string | null;
   department: string | null;
   role: string | null;
   admissionDate: Date | null;
@@ -19,6 +19,7 @@ export interface EmployeeWithCounts extends Employee {
     transportVoucher: number;
     mealVoucher: number;
     attendanceAward: number;
+    commission: number;
   };
 }
 
@@ -27,6 +28,7 @@ export interface IEmployeeRepository {
   findEmployeeDepartments(search?: string): Promise<{ department: string | null }[]>;
   findEmployeesPage(params: EmployeeSearchParams): Promise<EmployeeWithCounts[]>;
   findEmployeeOptions(): Promise<{ id: string; name: string }[]>;
+  findTechnicianOptions(): Promise<{ id: string; name: string }[]>;
   findEmployeeById(id: string): Promise<Employee | null>;
   createEmployeeRecord(data: EmployeeRecordInput): Promise<Employee>;
   updateEmployeeRecord(id: string, data: EmployeeRecordInput): Promise<Employee>;

@@ -1,6 +1,7 @@
 import { getTransportVouchersForPrint } from "@/application/transport-voucher/use-cases/get-transport-vouchers-for-print";
 import { getMealVouchersForPrint } from "@/application/meal-voucher/use-cases/get-meal-vouchers-for-print";
 import { getAttendanceAwardsForPrint } from "@/application/attendance-award/use-cases/get-attendance-awards-for-print";
+import { getCommissionsForPrint } from "@/application/commission/use-cases/get-commissions-for-print";
 import { PrintView, type PrintItem } from "@/presentation/print/print-view";
 
 export const metadata = {
@@ -28,6 +29,10 @@ async function loadPrintData(
   }
   if (tipo === "assiduidade") {
     const res = await getAttendanceAwardsForPrint(ids);
+    return res.success && res.data ? (res.data as unknown as PrintItem[]) : [];
+  }
+  if (tipo === "comissao") {
+    const res = await getCommissionsForPrint(ids);
     return res.success && res.data ? (res.data as unknown as PrintItem[]) : [];
   }
   return [];

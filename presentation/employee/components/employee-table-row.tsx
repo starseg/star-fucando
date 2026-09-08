@@ -56,6 +56,12 @@ export function EmployeeTableRow({ employee, isDeleting, onEdit, onDelete }: Emp
               >
                 Assid.: {employee._count.attendanceAward}
               </Badge>
+              <Badge
+                variant="outline"
+                className="border-violet-500/30 text-violet-400 text-[10px] bg-violet-500/5 px-2 py-0.5 rounded-md"
+              >
+                Comis.: {employee._count.commission}
+              </Badge>
             </>
           )}
         </div>

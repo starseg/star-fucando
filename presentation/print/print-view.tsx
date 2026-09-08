@@ -4,13 +4,15 @@ import * as React from "react";
 import { TransportReceipt } from "./components/transport-receipt";
 import { MealReceipt } from "./components/meal-receipt";
 import { AttendanceReceipt } from "./components/attendance-receipt";
+import { CommissionReceipt } from "./components/commission-receipt";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft } from "lucide-react";
 
 type TransportPrintItem = React.ComponentProps<typeof TransportReceipt>["voucher"];
 type MealPrintItem = React.ComponentProps<typeof MealReceipt>["voucher"];
 type AttendancePrintItem = React.ComponentProps<typeof AttendanceReceipt>["award"];
-export type PrintItem = TransportPrintItem | MealPrintItem | AttendancePrintItem;
+type CommissionPrintItem = React.ComponentProps<typeof CommissionReceipt>["commission"];
+export type PrintItem = TransportPrintItem | MealPrintItem | AttendancePrintItem | CommissionPrintItem;
 
 interface PrintViewProps {
   tipo: string | undefined;
@@ -110,6 +112,11 @@ export function PrintView({ tipo, data }: PrintViewProps) {
         {tipo === "assiduidade" &&
           data.map((award) => (
             <AttendanceReceipt key={award.id} award={award as AttendancePrintItem} />
+          ))}
+
+        {tipo === "comissao" &&
+          data.map((commission) => (
+            <CommissionReceipt key={commission.id} commission={commission as CommissionPrintItem} />
           ))}
       </div>
     </div>

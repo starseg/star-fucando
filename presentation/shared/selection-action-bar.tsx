@@ -10,7 +10,7 @@ interface SelectionActionBarProps {
   onPrint: () => void;
   onPrintAccounting?: () => void;
   onClear: () => void;
-  benefitType: "Vale Transporte" | "Vale Alimentação" | "Prêmio de Assiduidade";
+  benefitType: "Vale Transporte" | "Vale Alimentação" | "Prêmio de Assiduidade" | "Comissão";
 }
 
 export function SelectionActionBar({

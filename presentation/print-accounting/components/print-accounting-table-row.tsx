@@ -101,6 +101,19 @@ export function PrintAccountingTableRow({ tipo, item, badgeColor }: PrintAccount
           </TableCell>
         </>
       )}
+
+      {tipo === "comissao" && (
+        <>
+          <TableCell className="text-xs font-medium text-stone-300 py-3.5">
+            {formatMonthYear(item.referenceMonth)}
+          </TableCell>
+          <TableCell className="text-right pr-4 py-3.5">
+            <span className="text-base font-black text-violet-400 block">
+              {formatCurrency(item.commissionValue)}
+            </span>
+          </TableCell>
+        </>
+      )}
     </TableRow>
   );
 }

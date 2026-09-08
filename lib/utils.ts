@@ -172,6 +172,18 @@ export function getMonthAndYear(date: Date | string | null | undefined): { month
   return { monthName, year };
 }
 
+export function formatCommissionPeriod(referenceMonth: Date | string): { periodStart: string; periodEnd: string } {
+  const d = typeof referenceMonth === "string" ? new Date(referenceMonth) : referenceMonth;
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth();
+  const periodStartDate = new Date(Date.UTC(year, month - 1, 21));
+  const periodEndDate = new Date(Date.UTC(year, month, 20));
+  return {
+    periodStart: formatDate(periodStartDate),
+    periodEnd: formatDate(periodEndDate),
+  };
+}
+
 export function formatReceiptDate(referenceDate: Date | string | null | undefined, city: string = COMPANY_CONFIG.city): string {
   const { monthName, year } = getMonthAndYear(referenceDate);
   const d = typeof referenceDate === "string" ? new Date(referenceDate) : (referenceDate || new Date());

@@ -44,6 +44,7 @@ export class PrismaEmployeeRepository implements IEmployeeRepository {
             transportVoucher: true,
             mealVoucher: true,
             attendanceAward: true,
+            commission: true,
           },
         },
       },
@@ -61,6 +62,17 @@ export class PrismaEmployeeRepository implements IEmployeeRepository {
       { tags: ["employees"] },
     );
     return cachedFn();
+  }
+
+  async findTechnicianOptions() {
+    return prisma.employee.findMany({
+      where: {
+        OR: [{ department: "Técnico" }, { role: "Técnico" }],
+        NOT: { name: "Isaque Atolini Gaspar" },
+      },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
   }
 
   async findEmployeeById(id: string) {
@@ -82,6 +94,7 @@ export class PrismaEmployeeRepository implements IEmployeeRepository {
     await prisma.transportVoucher.deleteMany({ where: { employeeId: id } });
     await prisma.mealVoucher.deleteMany({ where: { employeeId: id } });
     await prisma.attendanceAward.deleteMany({ where: { employeeId: id } });
+    await prisma.commission.deleteMany({ where: { employeeId: id } });
     await prisma.employee.delete({ where: { id } });
   }
 }

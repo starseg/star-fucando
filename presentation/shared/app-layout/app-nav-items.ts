@@ -1,4 +1,4 @@
-import { Users, Bus, Utensils, Award, Search, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Users, Bus, Utensils, Award, HandCoins, Search, ShieldCheck, type LucideIcon } from "lucide-react";
 
 export interface AppNavItem {
   label: string;
@@ -14,6 +14,7 @@ export function getAppNavItems(isAdmin: boolean, pendingCount: number): AppNavIt
     { label: "Vale Transporte", href: "/vale-transporte", icon: Bus },
     { label: "Vale Alimentação", href: "/vale-alimentacao", icon: Utensils },
     { label: "Prêmio Assiduidade", href: "/assiduidade", icon: Award },
+    { label: "Comissões", href: "/comissoes", icon: HandCoins },
   ];
 
   if (isAdmin) {

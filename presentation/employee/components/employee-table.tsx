@@ -21,6 +21,7 @@ export interface EmployeeData {
     transportVoucher: number;
     mealVoucher: number;
     attendanceAward: number;
+    commission: number;
   };
 }
 

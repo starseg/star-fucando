@@ -8,12 +8,14 @@ const ICON_COLOR: Record<DataTableAccentColor, string> = {
   amber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   sky: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+  violet: "bg-violet-500/10 text-violet-400 border-violet-500/20",
 };
 
 const ACTION_BUTTON_COLOR: Record<DataTableAccentColor, string> = {
   amber: "bg-amber-500 text-stone-950 hover:bg-amber-400 shadow-amber-500/20",
   emerald: "bg-emerald-500 text-stone-950 hover:bg-emerald-400 shadow-emerald-500/20",
   sky: "bg-sky-500 text-stone-950 hover:bg-sky-400 shadow-sky-500/20",
+  violet: "bg-violet-500 text-stone-950 hover:bg-violet-400 shadow-violet-500/20",
 };
 
 interface DataTableEmptyStateProps {

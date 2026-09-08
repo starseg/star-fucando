@@ -7,7 +7,7 @@ interface StatsCardProps {
   value: string | number;
   subtitle?: string;
   icon: LucideIcon;
-  color?: "amber" | "emerald" | "sky" | "stone";
+  color?: "amber" | "emerald" | "sky" | "stone" | "violet";
 }
 
 export function StatsCard({
@@ -33,6 +33,10 @@ export function StatsCard({
     stone: {
       bg: "bg-stone-800/50 border-stone-700/60 text-stone-300",
       accent: "text-stone-100",
+    },
+    violet: {
+      bg: "bg-violet-500/10 border-violet-500/20 text-violet-400",
+      accent: "text-violet-400",
     },
   };
 

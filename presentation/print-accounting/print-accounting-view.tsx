@@ -30,6 +30,7 @@ export interface PrintAccountingItem {
   discounts?: number | null;
   netValue?: number;
   bonusValue?: number;
+  commissionValue?: number;
 }
 
 interface PrintAccountingViewProps {
@@ -60,6 +61,8 @@ export function PrintAccountingView({ tipo, data, mes, ano }: PrintAccountingVie
       ? data.reduce((acc, item) => acc + Number(item.totalValue), 0)
       : tipo === "alimentacao"
       ? data.reduce((acc, item) => acc + Number(item.netValue), 0)
+      : tipo === "comissao"
+      ? data.reduce((acc, item) => acc + Number(item.commissionValue), 0)
       : data.reduce((acc, item) => acc + Number(item.bonusValue), 0);
 
   const referenceDateFormatted =

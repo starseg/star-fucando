@@ -51,6 +51,17 @@ export function PrintAccountingTableHeader({ tipo }: PrintAccountingTableHeaderP
             </TableHead>
           </>
         )}
+
+        {tipo === "comissao" && (
+          <>
+            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider">
+              Competência
+            </TableHead>
+            <TableHead className="text-stone-400 font-semibold text-xs uppercase tracking-wider text-right pr-4">
+              Valor da Comissão
+            </TableHead>
+          </>
+        )}
       </TableRow>
     </TableHeader>
   );

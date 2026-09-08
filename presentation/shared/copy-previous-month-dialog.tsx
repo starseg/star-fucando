@@ -23,7 +23,7 @@ interface CopyPreviousMonthDialogProps {
   targetMonth: number; // 1-12
   targetYear: number;
   benefitTitle: string; // Ex: "Vale Transporte"
-  accentColor?: "amber" | "emerald" | "sky";
+  accentColor?: "amber" | "emerald" | "sky" | "violet";
   onCopy: (
     sourceMonth: number,
     sourceYear: number,
@@ -44,6 +44,10 @@ const COLOR_STYLES = {
   sky: {
     badge: "bg-sky-500/10 text-sky-400 border-sky-500/20",
     button: "bg-sky-500 text-stone-950 hover:bg-sky-400 shadow-sky-500/20",
+  },
+  violet: {
+    badge: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+    button: "bg-violet-500 text-stone-950 hover:bg-violet-400 shadow-violet-500/20",
   },
 };
 
