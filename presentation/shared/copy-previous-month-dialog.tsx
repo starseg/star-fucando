@@ -10,17 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { MONTH_NAMES } from "@/lib/utils";
-import { Copy, Loader2, ArrowRight, AlertCircle } from "lucide-react";
+import { Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { CopyPreviousMonthFields } from "./copy-previous-month/copy-previous-month-fields";
+import { CopyPreviousMonthNotice } from "./copy-previous-month/copy-previous-month-notice";
 
 interface CopyPreviousMonthDialogProps {
   isOpen: boolean;
@@ -37,6 +31,21 @@ interface CopyPreviousMonthDialogProps {
     targetYear: number
   ) => Promise<{ success: boolean; count?: number; error?: string }>;
 }
+
+const COLOR_STYLES = {
+  amber: {
+    badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    button: "bg-amber-500 text-stone-950 hover:bg-amber-400 shadow-amber-500/20",
+  },
+  emerald: {
+    badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    button: "bg-emerald-500 text-stone-950 hover:bg-emerald-400 shadow-emerald-500/20",
+  },
+  sky: {
+    badge: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+    button: "bg-sky-500 text-stone-950 hover:bg-sky-400 shadow-sky-500/20",
+  },
+};
 
 export function CopyPreviousMonthDialog({
   isOpen,
@@ -64,23 +73,7 @@ export function CopyPreviousMonthDialog({
     }
   }, [isOpen, targetMonth, targetYear]);
 
-  const colorStyles = {
-    amber: {
-      badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-      button: "bg-amber-500 text-stone-950 hover:bg-amber-400 shadow-amber-500/20",
-      icon: "text-amber-400",
-    },
-    emerald: {
-      badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-      button: "bg-emerald-500 text-stone-950 hover:bg-emerald-400 shadow-emerald-500/20",
-      icon: "text-emerald-400",
-    },
-    sky: {
-      badge: "bg-sky-500/10 text-sky-400 border-sky-500/20",
-      button: "bg-sky-500 text-stone-950 hover:bg-sky-400 shadow-sky-500/20",
-      icon: "text-sky-400",
-    },
-  }[accentColor];
+  const colorStyles = COLOR_STYLES[accentColor];
 
   const executeCopyProcess = async () => {
     if (sourceMonth === targetMonth && sourceYear === targetYear) {
@@ -133,79 +126,18 @@ export function CopyPreviousMonthDialog({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Fluxo Visual Origem -> Destino */}
-          <div className="rounded-xl border border-stone-800/80 bg-stone-900/40 p-4">
-            <div className="flex items-center justify-between gap-2">
-              {/* De (Origem) */}
-              <div className="flex-1 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
-                  Copiar de (Origem)
-                </span>
-                <div className="grid grid-cols-2 gap-1.5 pt-1">
-                  <Select
-                    value={String(sourceMonth)}
-                    onValueChange={(val) => setSourceMonth(Number(val))}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="bg-stone-950 border-stone-700 text-stone-100 h-9 text-xs rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-                      {MONTH_NAMES.map((name, idx) => (
-                        <SelectItem key={name} value={String(idx + 1)}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          <CopyPreviousMonthFields
+            sourceMonth={sourceMonth}
+            sourceYear={sourceYear}
+            targetMonth={targetMonth}
+            targetYear={targetYear}
+            years={years}
+            isLoading={isLoading}
+            onSourceMonthChange={setSourceMonth}
+            onSourceYearChange={setSourceYear}
+          />
 
-                  <Select
-                    value={String(sourceYear)}
-                    onValueChange={(val) => setSourceYear(Number(val))}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="bg-stone-950 border-stone-700 text-stone-100 h-9 text-xs rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-                      {years.map((y) => (
-                        <SelectItem key={y} value={String(y)}>
-                          {y}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="pt-5 text-stone-500">
-                <ArrowRight className="h-5 w-5" />
-              </div>
-
-              {/* Para (Destino) */}
-              <div className="flex-1 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
-                  Para (Destino)
-                </span>
-                <div className="h-9 flex items-center justify-center rounded-lg bg-stone-950 border border-stone-700/60 px-3 text-xs font-bold text-stone-100 mt-1">
-                  {MONTH_NAMES[targetMonth - 1]} / {targetYear}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Aviso Informativo */}
-          <div className="flex items-start gap-2.5 rounded-xl bg-stone-900/60 border border-stone-800 p-3 text-xs text-stone-400 leading-relaxed">
-            <AlertCircle className="h-4 w-4 text-stone-300 shrink-0 mt-0.5" />
-            <span>
-              Todos os colaboradores, valores e modais do mês de origem serão copiados para{" "}
-              <strong className="text-stone-200">
-                {MONTH_NAMES[targetMonth - 1]} de {targetYear}
-              </strong>
-              . Lançamentos existentes no mês de destino serão{" "}
-              <strong className="text-stone-200">substituídos</strong>.
-            </span>
-          </div>
+          <CopyPreviousMonthNotice targetMonth={targetMonth} targetYear={targetYear} />
 
           <DialogFooter className="pt-3 border-t border-stone-800">
             <Button
