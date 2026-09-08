@@ -2,7 +2,7 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
-import type { EmployeeFormData } from "./employee-dialog";
+import type { EmployeeFormData } from "./employee-form";
 
 interface EmployeeFormFieldsProps {
   register: UseFormRegister<EmployeeFormData>;

@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { UseFormRegister } from "react-hook-form";
-import type { AttendanceAwardFormData } from "./attendance-award-dialog";
+import type { AttendanceAwardFormData } from "./attendance-award-form";
 
 interface AttendanceAwardEmployeeMonthFieldsProps {
   employees: { id: string; name: string }[];

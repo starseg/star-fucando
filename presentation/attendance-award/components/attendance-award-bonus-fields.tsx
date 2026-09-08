@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { UseFormRegister } from "react-hook-form";
-import type { AttendanceAwardFormData } from "./attendance-award-dialog";
+import type { AttendanceAwardFormData } from "./attendance-award-form";
 
 interface AttendanceAwardBonusFieldsProps {
   register: UseFormRegister<AttendanceAwardFormData>;
