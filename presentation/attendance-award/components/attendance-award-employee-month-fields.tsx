@@ -1,13 +1,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/presentation/shared/searchable-select";
 import type { UseFormRegister } from "react-hook-form";
 import type { AttendanceAwardFormData } from "./attendance-award-form";
 
@@ -30,18 +24,14 @@ export function AttendanceAwardEmployeeMonthFields({
     <>
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-stone-300">Colaborador *</Label>
-        <Select value={employeeId} onValueChange={onEmployeeIdChange}>
-          <SelectTrigger className="bg-stone-900 border-stone-700/70 text-stone-100 h-10 rounded-xl">
-            <SelectValue placeholder="Selecione o colaborador" />
-          </SelectTrigger>
-          <SelectContent className="bg-stone-900 border-stone-800 text-stone-100">
-            {employees.map((emp) => (
-              <SelectItem key={emp.id} value={emp.id}>
-                {emp.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          options={employees}
+          value={employeeId}
+          onValueChange={onEmployeeIdChange}
+          placeholder="Selecione o colaborador"
+          searchPlaceholder="Buscar colaborador..."
+          emptyLabel="Nenhum colaborador encontrado."
+        />
         {employeeIdError && <p className="text-xs text-red-400">{employeeIdError}</p>}
       </div>
 
