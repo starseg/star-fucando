@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Bus } from "lucide-react";
-import { deleteTransportVoucher } from "@/application/transport-voucher/use-cases/delete-transport-voucher";
 import { copyTransportVouchers } from "@/application/transport-voucher/use-cases/copy-transport-vouchers";
+import { deleteTransportVoucher } from "@/application/transport-voucher/use-cases/delete-transport-voucher";
 import { DataTable } from "@/presentation/shared/data-table";
 import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
+import { useRowSelection } from "@/presentation/shared/hooks/use-row-selection";
 import { TransportVoucherDialog } from "./transport-voucher-dialog";
 import { TransportVoucherDeleteDialog } from "./transport-voucher-delete-dialog";
 import { TransportVoucherTableRow } from "./transport-voucher-table-row";
@@ -48,33 +49,14 @@ interface TransportVoucherTableProps {
   year: number;
 }
 
-export function TransportVoucherTable({
-  vouchers,
-  month,
-  year,
-}: TransportVoucherTableProps) {
+export function TransportVoucherTable({ vouchers, month, year }: TransportVoucherTableProps) {
   const router = useRouter();
-  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
-  const [editingVoucher, setEditingVoucher] =
-    React.useState<TransportVoucherData | null>(null);
+  const { selectedIds, allSelected, toggleSelect, toggleSelectAll, clearSelection } = useRowSelection(vouchers);
+  const [editingVoucher, setEditingVoucher] = React.useState<TransportVoucherData | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
-  const [voucherToDelete, setVoucherToDelete] =
-    React.useState<TransportVoucherData | null>(null);
+  const [voucherToDelete, setVoucherToDelete] = React.useState<TransportVoucherData | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
-
-  const allSelected =
-    vouchers.length > 0 && selectedIds.length === vouchers.length;
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  };
-
-  const toggleSelectAll = (checked: boolean) => {
-    setSelectedIds(checked ? vouchers.map((v) => v.id) : []);
-  };
 
   const openEditDialog = (voucher: TransportVoucherData) => {
     setEditingVoucher(voucher);
@@ -112,15 +94,10 @@ export function TransportVoucherTable({
 
   const printAccountingReport = (ids: string[]) => {
     if (ids.length === 0) {
-      toast.warning(
-        "Selecione pelo menos um lançamento para imprimir o relatório.",
-      );
+      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
       return;
     }
-    window.open(
-      `/imprimir-contabilidade?tipo=transporte&ids=${ids.join(",")}&mes=${month}&ano=${year}`,
-      "_blank",
-    );
+    window.open(`/imprimir-contabilidade?tipo=transporte&ids=${ids.join(",")}&mes=${month}&ano=${year}`, "_blank");
   };
 
   if (vouchers.length === 0) {
@@ -152,21 +129,12 @@ export function TransportVoucherTable({
     <>
       <DataTable.Root>
         <DataTable.Header>
-          <DataTable.SelectAllCell
-            checked={allSelected}
-            onCheckedChange={toggleSelectAll}
-          />
+          <DataTable.SelectAllCell checked={allSelected} onCheckedChange={toggleSelectAll} />
           <DataTable.HeadCell>Colaborador</DataTable.HeadCell>
           <DataTable.HeadCell>Dias Úteis / Trajeto</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-center">
-            Qtd. Vales
-          </DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right">
-            Valor Total
-          </DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right w-36">
-            Ações
-          </DataTable.HeadCell>
+          <DataTable.HeadCell className="text-center">Qtd. Vales</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right">Valor Total</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right w-36">Ações</DataTable.HeadCell>
         </DataTable.Header>
         <DataTable.Body>
           {vouchers.map((voucher) => (
@@ -205,7 +173,7 @@ export function TransportVoucherTable({
         totalCount={vouchers.length}
         onPrint={() => printReceipts(selectedIds)}
         onPrintAccounting={() => printAccountingReport(selectedIds)}
-        onClear={() => setSelectedIds([])}
+        onClear={clearSelection}
         benefitType="Vale Transporte"
       />
     </>

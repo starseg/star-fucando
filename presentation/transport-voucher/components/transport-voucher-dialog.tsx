@@ -9,7 +9,7 @@ import { TransportVoucherEmployeeMonthFields } from "./transport-voucher-employe
 import { TransportVoucherModalList } from "./transport-voucher-modal-list";
 import { TransportVoucherTotalsSummary } from "./transport-voucher-totals-summary";
 import { TransportVoucherDiscountFields } from "./transport-voucher-discount-fields";
-import { useTransportVoucherEmployees } from "../hooks/use-transport-voucher-employees";
+import { useEmployeeOptions } from "@/presentation/shared/hooks/use-employee-options";
 import { useTransportVoucherModalDrafts } from "../hooks/use-transport-voucher-modal-drafts";
 import { useTransportVoucherFormState } from "../hooks/use-transport-voucher-form-state";
 import { useTransportVoucherSubmit } from "../hooks/use-transport-voucher-submit";
@@ -38,7 +38,7 @@ export function TransportVoucherDialog({
     return `${year}-${month}-01`;
   }, [defaultMonth, defaultYear]);
 
-  const employees = useTransportVoucherEmployees(isOpen);
+  const employees = useEmployeeOptions(isOpen);
   const formState = useTransportVoucherFormState({ isOpen, voucherToEdit, defaultRefDate });
   const modalDrafts = useTransportVoucherModalDrafts({ isOpen, voucherToEdit });
 
