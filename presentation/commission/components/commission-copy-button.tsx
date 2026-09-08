@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
-import { copyCommissions } from "@/application/commission/use-cases/copy-commissions";
+import { commissionCopyConfig } from "../commission-copy-config";
 
 interface CommissionCopyButtonProps {
   targetMonth: number;
@@ -34,9 +34,7 @@ export function CommissionCopyButton({ targetMonth, targetYear }: CommissionCopy
         onSuccess={() => router.refresh()}
         targetMonth={targetMonth}
         targetYear={targetYear}
-        benefitTitle="Comissão"
-        accentColor="violet"
-        onCopy={copyCommissions}
+        config={commissionCopyConfig}
       />
     </>
   );

@@ -2,14 +2,15 @@ import * as React from "react";
 import Image from "next/image";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Session } from "next-auth";
+import { useAppLayoutUser } from "./app-layout-context";
 
-interface AppSidebarUserFooterProps {
-  user: NonNullable<Session["user"]>;
-  onSignOut: () => void;
-}
+export function AppSidebarUserFooter() {
+  const { user, onSignOut } = useAppLayoutUser();
 
-export function AppSidebarUserFooter({ user, onSignOut }: AppSidebarUserFooterProps) {
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="border-t border-stone-800 p-3 bg-stone-950/40">
       <div className="flex items-center justify-between gap-2 rounded-xl p-2 bg-stone-900/50 border border-stone-800/60">

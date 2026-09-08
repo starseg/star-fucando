@@ -22,7 +22,6 @@ const attendanceAwardSchema = z.object({
 export type AttendanceAwardFormData = z.infer<typeof attendanceAwardSchema>;
 
 interface AttendanceAwardFormProps {
-  employees: { id: string; name: string }[];
   awardToEdit?: AttendanceAwardData | null;
   defaultMonth?: number;
   defaultYear?: number;
@@ -37,7 +36,6 @@ function buildDefaultRefDate(defaultMonth?: number, defaultYear?: number) {
 }
 
 export function AttendanceAwardForm({
-  employees,
   awardToEdit,
   defaultMonth,
   defaultYear,
@@ -99,7 +97,6 @@ export function AttendanceAwardForm({
   return (
     <form onSubmit={handleSubmit(persistAttendanceAward)} className="space-y-4 pt-2">
       <AttendanceAwardEmployeeMonthFields
-        employees={employees}
         employeeId={watch("employeeId")}
         onEmployeeIdChange={(val) => setValue("employeeId", val)}
         employeeIdError={errors.employeeId?.message}

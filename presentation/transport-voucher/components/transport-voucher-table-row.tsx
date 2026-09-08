@@ -1,8 +1,6 @@
 import * as React from "react";
 import { TableCell } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { Edit2, Trash2, Printer } from "lucide-react";
 import { DataTable } from "@/presentation/shared/data-table";
 import type { TransportVoucherData } from "./transport-voucher-table";
 
@@ -26,18 +24,16 @@ export function TransportVoucherTableRow({
   onDelete,
 }: TransportVoucherTableRowProps) {
   return (
-    <DataTable.Row selected={isSelected}>
-      <DataTable.SelectRowCell
-        checked={isSelected}
-        onCheckedChange={() => onToggleSelect(voucher.id)}
-        label={`Selecionar ${voucher.employee.name}`}
-      />
-      <TableCell>
-        <DataTable.AvatarCell
-          name={voucher.employee.name}
-          subtitle={`${voucher.employee.department || "Operacional"} • ${voucher.employee.role || "Colaborador"}`}
-        />
-      </TableCell>
+    <DataTable.EntityRow
+      entity={voucher}
+      isSelected={isSelected}
+      isDeleting={isDeleting}
+      accentColor="amber"
+      onToggleSelect={onToggleSelect}
+      onPrint={onPrint}
+      onEdit={onEdit}
+      onDelete={onDelete}
+    >
       <TableCell>
         <div className="space-y-0.5">
           <span className="text-sm font-semibold text-stone-200 block">{voucher.workingDays} dias úteis</span>
@@ -57,28 +53,6 @@ export function TransportVoucherTableRow({
           <span className="text-[10px] text-stone-300">Desc. {voucher.discountPercentage}%</span>
         )}
       </TableCell>
-      <TableCell className="text-right">
-        <DataTable.Actions>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onPrint([voucher.id])}
-            className="h-8 px-2.5 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-lg"
-            title="Imprimir recibo individual"
-          >
-            <Printer className="mr-1 h-3.5 w-3.5" />
-            Recibo
-          </Button>
-          <DataTable.IconAction icon={Edit2} onClick={() => onEdit(voucher)} title="Editar" />
-          <DataTable.IconAction
-            icon={Trash2}
-            variant="danger"
-            disabled={isDeleting}
-            onClick={() => onDelete(voucher)}
-            title="Excluir"
-          />
-        </DataTable.Actions>
-      </TableCell>
-    </DataTable.Row>
+    </DataTable.EntityRow>
   );
 }

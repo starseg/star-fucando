@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Award } from "lucide-react";
 import { deleteAttendanceAward } from "@/application/attendance-award/use-cases/delete-attendance-award";
-import { copyAttendanceAwards } from "@/application/attendance-award/use-cases/copy-attendance-awards";
+import { attendanceAwardCopyConfig } from "../attendance-award-copy-config";
 import { DataTable } from "@/presentation/shared/data-table";
 import { useDeleteWithConfirmation } from "@/presentation/shared/hooks/use-delete-with-confirmation";
 import { useRowSelection } from "@/presentation/shared/hooks/use-row-selection";
@@ -91,9 +91,7 @@ export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTab
           onSuccess={() => router.refresh()}
           targetMonth={month}
           targetYear={year}
-          benefitTitle="Prêmio de Assiduidade"
-          accentColor="sky"
-          onCopy={copyAttendanceAwards}
+          config={attendanceAwardCopyConfig}
         />
       </>
     );

@@ -1,5 +1,4 @@
 import * as React from "react";
-import type { Session } from "next-auth";
 import type { AppNavItem } from "./app-nav-items";
 import { AppNavLink } from "./app-nav-link";
 import { AppSidebarUserFooter } from "./app-sidebar-user-footer";
@@ -7,12 +6,9 @@ import { AppSidebarUserFooter } from "./app-sidebar-user-footer";
 interface AppSidebarProps {
   navItems: AppNavItem[];
   pathname: string;
-  pendingCount: number;
-  user: Session["user"] | undefined;
-  onSignOut: () => void;
 }
 
-export function AppSidebar({ navItems, pathname, pendingCount, user, onSignOut }: AppSidebarProps) {
+export function AppSidebar({ navItems, pathname }: AppSidebarProps) {
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-stone-800 bg-[#141210]/95 backdrop-blur-md">
       <div className="flex h-16 items-center border-b border-stone-800 px-6">
@@ -29,11 +25,11 @@ export function AppSidebar({ navItems, pathname, pendingCount, user, onSignOut }
           Módulos do Sistema
         </div>
         {navItems.map((item) => (
-          <AppNavLink key={item.href} item={item} isActive={pathname === item.href} pendingCount={pendingCount} />
+          <AppNavLink key={item.href} item={item} isActive={pathname === item.href} />
         ))}
       </nav>
 
-      {user && <AppSidebarUserFooter user={user} onSignOut={onSignOut} />}
+      <AppSidebarUserFooter />
     </aside>
   );
 }

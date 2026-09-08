@@ -1,27 +1,19 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { User as UserIcon } from "lucide-react";
-import type { Session } from "next-auth";
 import type { AppNavItem } from "./app-nav-items";
 import { AppNavLink } from "./app-nav-link";
+import { useAppLayoutUser } from "./app-layout-context";
 
 interface AppMobileMenuProps {
   navItems: AppNavItem[];
   pathname: string;
-  pendingCount: number;
-  user: Session["user"] | undefined;
   onNavigate: () => void;
-  onSignOut: () => void;
 }
 
-export function AppMobileMenu({
-  navItems,
-  pathname,
-  pendingCount,
-  user,
-  onNavigate,
-  onSignOut,
-}: AppMobileMenuProps) {
+export function AppMobileMenu({ navItems, pathname, onNavigate }: AppMobileMenuProps) {
+  const { user, onSignOut } = useAppLayoutUser();
+
   return (
     <div className="border-b border-stone-800 bg-[#141210] p-4 space-y-1 md:hidden">
       {navItems.map((item) => (
@@ -29,7 +21,6 @@ export function AppMobileMenu({
           key={item.href}
           item={item}
           isActive={pathname === item.href}
-          pendingCount={pendingCount}
           variant="mobile"
           onClick={onNavigate}
         />

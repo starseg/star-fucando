@@ -6,22 +6,15 @@ import { Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { parseDecimalInput, parseIntegerInput } from "@/lib/number";
 import { rowSubtotal, type ModalDraft } from "../hooks/use-transport-voucher-modal-drafts";
+import { useTransportVoucherDialogContext } from "./transport-voucher-dialog-context";
 
 interface TransportVoucherModalRowProps {
   draft: ModalDraft;
   canRemove: boolean;
-  onUpdateText: (key: string, field: "name" | "unitValueText", value: string) => void;
-  onUpdateQuantity: (key: string, value: string) => void;
-  onRemove: (key: string) => void;
 }
 
-export function TransportVoucherModalRow({
-  draft,
-  canRemove,
-  onUpdateText,
-  onUpdateQuantity,
-  onRemove,
-}: TransportVoucherModalRowProps) {
+export function TransportVoucherModalRow({ draft, canRemove }: TransportVoucherModalRowProps) {
+  const { modalDrafts } = useTransportVoucherDialogContext();
   const quantity = parseIntegerInput(draft.quantityText);
   const unitValue = parseDecimalInput(draft.unitValueText);
   const subtotal = rowSubtotal(draft);
@@ -33,7 +26,7 @@ export function TransportVoucherModalRow({
         <Input
           placeholder="Ex: Ônibus, Van..."
           value={draft.name}
-          onChange={(e) => onUpdateText(draft.key, "name", e.target.value)}
+          onChange={(e) => modalDrafts.updateModalText(draft.key, "name", e.target.value)}
           className="bg-stone-900 border-stone-700/80 text-stone-100 h-7 text-xs rounded-lg font-medium"
         />
       </div>
@@ -45,7 +38,7 @@ export function TransportVoucherModalRow({
           inputMode="decimal"
           placeholder="0,00"
           value={draft.unitValueText}
-          onChange={(e) => onUpdateText(draft.key, "unitValueText", e.target.value)}
+          onChange={(e) => modalDrafts.updateModalText(draft.key, "unitValueText", e.target.value)}
           className="bg-stone-900 border-stone-700/80 text-stone-100 h-7 text-xs rounded-lg text-right font-semibold"
         />
       </div>
@@ -57,7 +50,7 @@ export function TransportVoucherModalRow({
           inputMode="numeric"
           placeholder="0"
           value={draft.quantityText}
-          onChange={(e) => onUpdateQuantity(draft.key, e.target.value)}
+          onChange={(e) => modalDrafts.updateModalQuantity(draft.key, e.target.value)}
           className="bg-stone-900 border-stone-700/80 text-stone-100 h-7 text-xs rounded-lg text-center font-bold text-amber-300"
         />
       </div>
@@ -79,7 +72,7 @@ export function TransportVoucherModalRow({
             variant="ghost"
             size="icon"
             aria-label="Remover transporte"
-            onClick={() => onRemove(draft.key)}
+            onClick={() => modalDrafts.removeModal(draft.key)}
             className="h-6 w-6 text-stone-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
             title="Remover este transporte"
           >

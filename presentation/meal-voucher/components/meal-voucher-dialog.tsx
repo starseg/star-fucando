@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
 import { MealVoucherData } from "./meal-voucher-table";
 import { MealVoucherForm } from "./meal-voucher-form";
+import { MealVoucherDialogProvider } from "./meal-voucher-dialog-context";
 import { useEmployeeOptions } from "@/presentation/shared/hooks/use-employee-options";
 import { Utensils } from "lucide-react";
 
@@ -42,15 +43,16 @@ export function MealVoucherDialog({
           color="emerald"
         />
 
-        <MealVoucherForm
-          key={voucherToEdit?.id ?? "novo"}
-          employees={employees}
-          voucherToEdit={voucherToEdit}
-          defaultMonth={defaultMonth}
-          defaultYear={defaultYear}
-          onSuccess={onSuccess}
-          onClose={onClose}
-        />
+        <MealVoucherDialogProvider value={{ employees }}>
+          <MealVoucherForm
+            key={voucherToEdit?.id ?? "novo"}
+            voucherToEdit={voucherToEdit}
+            defaultMonth={defaultMonth}
+            defaultYear={defaultYear}
+            onSuccess={onSuccess}
+            onClose={onClose}
+          />
+        </MealVoucherDialogProvider>
       </DialogContent>
     </Dialog>
   );

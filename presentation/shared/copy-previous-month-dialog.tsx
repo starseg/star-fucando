@@ -15,21 +15,15 @@ import { Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CopyPreviousMonthFields } from "./copy-previous-month/copy-previous-month-fields";
 import { CopyPreviousMonthNotice } from "./copy-previous-month/copy-previous-month-notice";
+import type { CopyPreviousMonthConfig } from "./copy-previous-month/copy-previous-month.types";
 
 interface CopyPreviousMonthDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  targetMonth: number; // 1-12
+  targetMonth: number;
   targetYear: number;
-  benefitTitle: string; // Ex: "Vale Transporte"
-  accentColor?: "amber" | "emerald" | "sky" | "violet";
-  onCopy: (
-    sourceMonth: number,
-    sourceYear: number,
-    targetMonth: number,
-    targetYear: number
-  ) => Promise<{ success: boolean; count?: number; error?: string }>;
+  config: CopyPreviousMonthConfig;
 }
 
 const COLOR_STYLES = {
@@ -57,10 +51,9 @@ export function CopyPreviousMonthDialog({
   onSuccess,
   targetMonth,
   targetYear,
-  benefitTitle,
-  accentColor = "amber",
-  onCopy,
+  config,
 }: CopyPreviousMonthDialogProps) {
+  const { benefitTitle, accentColor, onCopy } = config;
   const [isLoading, setIsLoading] = React.useState(false);
 
   // Mês padrão de origem: mês anterior ao selecionado

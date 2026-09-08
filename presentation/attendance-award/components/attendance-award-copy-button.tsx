@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
-import { copyAttendanceAwards } from "@/application/attendance-award/use-cases/copy-attendance-awards";
+import { attendanceAwardCopyConfig } from "../attendance-award-copy-config";
 
 interface AttendanceAwardCopyButtonProps {
   targetMonth: number;
@@ -34,9 +34,7 @@ export function AttendanceAwardCopyButton({ targetMonth, targetYear }: Attendanc
         onSuccess={() => router.refresh()}
         targetMonth={targetMonth}
         targetYear={targetYear}
-        benefitTitle="Prêmio de Assiduidade"
-        accentColor="sky"
-        onCopy={copyAttendanceAwards}
+        config={attendanceAwardCopyConfig}
       />
     </>
   );

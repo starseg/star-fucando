@@ -9,6 +9,7 @@ import { TransportVoucherEmployeeMonthFields } from "./transport-voucher-employe
 import { TransportVoucherModalList } from "./transport-voucher-modal-list";
 import { TransportVoucherTotalsSummary } from "./transport-voucher-totals-summary";
 import { TransportVoucherDiscountFields } from "./transport-voucher-discount-fields";
+import { TransportVoucherDialogProvider } from "./transport-voucher-dialog-context";
 import { useEmployeeOptions } from "@/presentation/shared/hooks/use-employee-options";
 import { useTransportVoucherModalDrafts } from "../hooks/use-transport-voucher-modal-drafts";
 import { useTransportVoucherFormState } from "../hooks/use-transport-voucher-form-state";
@@ -55,9 +56,9 @@ export function TransportVoucherDialog({
     onClose,
   });
 
-  const handleWorkingDaysChange = (daysVal: string) => {
-    formState.setWorkingDays(daysVal);
-    modalDrafts.syncWorkingDays(daysVal);
+  const handleSelectEmployee = (val: string) => {
+    formState.setEmployeeId(val);
+    if (formState.formError) formState.setFormError(null);
   };
 
   return (
@@ -74,52 +75,33 @@ export function TransportVoucherDialog({
           description="Configure os modais e quantidades de passagens para emissão do recibo."
         />
 
-        <form onSubmit={persistTransportVoucher} className="space-y-4 pt-1">
-          {formState.formError && (
-            <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl">
-              {formState.formError}
-            </div>
-          )}
+        <TransportVoucherDialogProvider
+          value={{
+            employees,
+            formState,
+            modalDrafts,
+            onSelectEmployee: handleSelectEmployee,
+          }}
+        >
+          <form onSubmit={persistTransportVoucher} className="space-y-4 pt-1">
+            {formState.formError && (
+              <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl">
+                {formState.formError}
+              </div>
+            )}
 
-          <TransportVoucherEmployeeMonthFields
-            employees={employees}
-            employeeId={formState.employeeId}
-            onEmployeeIdChange={(val) => {
-              formState.setEmployeeId(val);
-              if (formState.formError) formState.setFormError(null);
-            }}
-            referenceMonth={formState.referenceMonth}
-            onReferenceMonthChange={formState.setReferenceMonth}
-          />
+            <TransportVoucherEmployeeMonthFields />
+            <TransportVoucherModalList />
+            <TransportVoucherTotalsSummary />
+            <TransportVoucherDiscountFields />
 
-          <TransportVoucherModalList
-            drafts={modalDrafts.drafts}
-            workingDays={formState.workingDays}
-            onWorkingDaysChange={handleWorkingDaysChange}
-            onUpdateText={modalDrafts.updateModalText}
-            onUpdateQuantity={modalDrafts.updateModalQuantity}
-            onRemove={modalDrafts.removeModal}
-            onAddExtra={() => modalDrafts.addExtraModal(formState.workingDays)}
-          />
-
-          <TransportVoucherTotalsSummary
-            totalVouchers={modalDrafts.totalVouchers}
-            totalValue={modalDrafts.totalValue}
-          />
-
-          <TransportVoucherDiscountFields
-            discountPercentage={formState.discountPercentage}
-            onDiscountPercentageChange={formState.setDiscountPercentage}
-            observations={formState.observations}
-            onObservationsChange={formState.setObservations}
-          />
-
-          <EntityDialogFooter
-            onCancel={onClose}
-            isSubmitting={isLoading}
-            submitLabel={voucherToEdit ? "Salvar Alterações" : "Cadastrar Lançamento"}
-          />
-        </form>
+            <EntityDialogFooter
+              onCancel={onClose}
+              isSubmitting={isLoading}
+              submitLabel={voucherToEdit ? "Salvar Alterações" : "Cadastrar Lançamento"}
+            />
+          </form>
+        </TransportVoucherDialogProvider>
       </DialogContent>
     </Dialog>
   );

@@ -4,9 +4,9 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/presentation/shared/searchable-select";
 import type { UseFormRegister } from "react-hook-form";
 import type { MealVoucherFormData } from "./meal-voucher-form";
+import { useMealVoucherDialogContext } from "./meal-voucher-dialog-context";
 
 interface MealVoucherEmployeeMonthFieldsProps {
-  employees: { id: string; name: string }[];
   employeeId: string;
   onEmployeeIdChange: (value: string) => void;
   employeeIdError?: string;
@@ -14,12 +14,13 @@ interface MealVoucherEmployeeMonthFieldsProps {
 }
 
 export function MealVoucherEmployeeMonthFields({
-  employees,
   employeeId,
   onEmployeeIdChange,
   employeeIdError,
   register,
 }: MealVoucherEmployeeMonthFieldsProps) {
+  const { employees } = useMealVoucherDialogContext();
+
   return (
     <>
       <div className="space-y-1.5">

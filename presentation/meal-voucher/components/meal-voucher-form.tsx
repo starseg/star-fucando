@@ -27,7 +27,6 @@ const mealVoucherSchema = z.object({
 export type MealVoucherFormData = z.infer<typeof mealVoucherSchema>;
 
 interface MealVoucherFormProps {
-  employees: { id: string; name: string }[];
   voucherToEdit?: MealVoucherData | null;
   defaultMonth?: number;
   defaultYear?: number;
@@ -36,7 +35,6 @@ interface MealVoucherFormProps {
 }
 
 export function MealVoucherForm({
-  employees,
   voucherToEdit,
   defaultMonth,
   defaultYear,
@@ -72,7 +70,6 @@ export function MealVoucherForm({
   return (
     <form onSubmit={handleSubmit(persistMealVoucher)} className="space-y-4 pt-2">
       <MealVoucherEmployeeMonthFields
-        employees={employees}
         employeeId={watch("employeeId")}
         onEmployeeIdChange={(val) => setValue("employeeId", val)}
         employeeIdError={errors.employeeId?.message}

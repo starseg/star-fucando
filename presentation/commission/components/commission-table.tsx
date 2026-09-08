@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { HandCoins } from "lucide-react";
 import { deleteCommission } from "@/application/commission/use-cases/delete-commission";
-import { copyCommissions } from "@/application/commission/use-cases/copy-commissions";
+import { commissionCopyConfig } from "../commission-copy-config";
 import { DataTable } from "@/presentation/shared/data-table";
 import { useDeleteWithConfirmation } from "@/presentation/shared/hooks/use-delete-with-confirmation";
 import { useRowSelection } from "@/presentation/shared/hooks/use-row-selection";
@@ -91,9 +91,7 @@ export function CommissionTable({ commissions, month, year }: CommissionTablePro
           onSuccess={() => router.refresh()}
           targetMonth={month}
           targetYear={year}
-          benefitTitle="Comissão"
-          accentColor="violet"
-          onCopy={copyCommissions}
+          config={commissionCopyConfig}
         />
       </>
     );

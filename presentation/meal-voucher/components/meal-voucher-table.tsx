@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Utensils } from "lucide-react";
 import { deleteMealVoucher } from "@/application/meal-voucher/use-cases/delete-meal-voucher";
-import { copyMealVouchers } from "@/application/meal-voucher/use-cases/copy-meal-vouchers";
+import { mealVoucherCopyConfig } from "../meal-voucher-copy-config";
 import { DataTable } from "@/presentation/shared/data-table";
 import { useDeleteWithConfirmation } from "@/presentation/shared/hooks/use-delete-with-confirmation";
 import { useRowSelection } from "@/presentation/shared/hooks/use-row-selection";
@@ -96,9 +96,7 @@ export function MealVoucherTable({ vouchers, month, year }: MealVoucherTableProp
           onSuccess={() => router.refresh()}
           targetMonth={month}
           targetYear={year}
-          benefitTitle="Vale Alimentação"
-          accentColor="emerald"
-          onCopy={copyMealVouchers}
+          config={mealVoucherCopyConfig}
         />
       </>
     );

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
-import { copyMealVouchers } from "@/application/meal-voucher/use-cases/copy-meal-vouchers";
+import { mealVoucherCopyConfig } from "../meal-voucher-copy-config";
 
 interface MealVoucherCopyButtonProps {
   targetMonth: number;
@@ -34,9 +34,7 @@ export function MealVoucherCopyButton({ targetMonth, targetYear }: MealVoucherCo
         onSuccess={() => router.refresh()}
         targetMonth={targetMonth}
         targetYear={targetYear}
-        benefitTitle="Vale Alimentação"
-        accentColor="emerald"
-        onCopy={copyMealVouchers}
+        config={mealVoucherCopyConfig}
       />
     </>
   );

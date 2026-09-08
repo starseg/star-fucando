@@ -6,15 +6,14 @@ import type { AppNavItem } from "./app-nav-items";
 interface AppNavLinkProps {
   item: AppNavItem;
   isActive: boolean;
-  pendingCount: number;
   variant?: "desktop" | "mobile";
   onClick?: () => void;
 }
 
-export function AppNavLink({ item, isActive, pendingCount, variant = "desktop", onClick }: AppNavLinkProps) {
+export function AppNavLink({ item, isActive, variant = "desktop", onClick }: AppNavLinkProps) {
   const Icon = item.icon;
   const isDesktop = variant === "desktop";
-  const isAdminBadgeHighlighted = item.href === "/admin/aprovacoes" && pendingCount > 0;
+  const isAdminBadgeHighlighted = Boolean(item.highlighted);
 
   return (
     <Link

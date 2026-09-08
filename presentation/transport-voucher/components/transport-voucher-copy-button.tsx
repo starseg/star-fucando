@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { CopyPreviousMonthDialog } from "@/presentation/shared/copy-previous-month-dialog";
-import { copyTransportVouchers } from "@/application/transport-voucher/use-cases/copy-transport-vouchers";
+import { transportVoucherCopyConfig } from "../transport-voucher-copy-config";
 
 interface TransportVoucherCopyButtonProps {
   targetMonth: number;
@@ -37,9 +37,7 @@ export function TransportVoucherCopyButton({
         onSuccess={() => router.refresh()}
         targetMonth={targetMonth}
         targetYear={targetYear}
-        benefitTitle="Vale Transporte"
-        accentColor="amber"
-        onCopy={copyTransportVouchers}
+        config={transportVoucherCopyConfig}
       />
     </>
   );

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Bus } from "lucide-react";
-import { copyTransportVouchers } from "@/application/transport-voucher/use-cases/copy-transport-vouchers";
+import { transportVoucherCopyConfig } from "../transport-voucher-copy-config";
 import { deleteTransportVoucher } from "@/application/transport-voucher/use-cases/delete-transport-voucher";
 import { DataTable } from "@/presentation/shared/data-table";
 import { SelectionActionBar } from "@/presentation/shared/selection-action-bar";
@@ -117,9 +117,7 @@ export function TransportVoucherTable({ vouchers, month, year }: TransportVouche
           onSuccess={() => router.refresh()}
           targetMonth={month}
           targetYear={year}
-          benefitTitle="Vale Transporte"
-          accentColor="amber"
-          onCopy={copyTransportVouchers}
+          config={transportVoucherCopyConfig}
         />
       </>
     );

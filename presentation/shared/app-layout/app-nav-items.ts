@@ -5,6 +5,7 @@ export interface AppNavItem {
   href: string;
   icon: LucideIcon;
   badge?: string;
+  highlighted?: boolean;
 }
 
 export function getAppNavItems(isAdmin: boolean, pendingCount: number): AppNavItem[] {
@@ -23,6 +24,7 @@ export function getAppNavItems(isAdmin: boolean, pendingCount: number): AppNavIt
       href: "/admin/aprovacoes",
       icon: ShieldCheck,
       badge: pendingCount > 0 ? `${pendingCount} pendente${pendingCount > 1 ? "s" : ""}` : "",
+      highlighted: pendingCount > 0,
     });
   }
 

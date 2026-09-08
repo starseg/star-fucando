@@ -22,7 +22,6 @@ const commissionSchema = z.object({
 export type CommissionFormData = z.infer<typeof commissionSchema>;
 
 interface CommissionFormProps {
-  employees: { id: string; name: string }[];
   commissionToEdit?: CommissionData | null;
   defaultMonth?: number;
   defaultYear?: number;
@@ -37,7 +36,6 @@ function buildDefaultRefDate(defaultMonth?: number, defaultYear?: number) {
 }
 
 export function CommissionForm({
-  employees,
   commissionToEdit,
   defaultMonth,
   defaultYear,
@@ -99,7 +97,6 @@ export function CommissionForm({
   return (
     <form onSubmit={handleSubmit(persistCommission)} className="space-y-4 pt-2">
       <CommissionEmployeeMonthFields
-        employees={employees}
         employeeId={watch("employeeId")}
         onEmployeeIdChange={(val) => setValue("employeeId", val)}
         employeeIdError={errors.employeeId?.message}

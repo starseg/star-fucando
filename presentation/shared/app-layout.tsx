@@ -7,6 +7,7 @@ import { getAppNavItems } from "./app-layout/app-nav-items";
 import { AppSidebar } from "./app-layout/app-sidebar";
 import { AppMobileHeader } from "./app-layout/app-mobile-header";
 import { AppMobileMenu } from "./app-layout/app-mobile-menu";
+import { AppLayoutProvider } from "./app-layout/app-layout-context";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,39 +30,33 @@ export function AppLayout({ children, pendingCount }: AppLayoutProps) {
   }
 
   const navItems = getAppNavItems(isAdmin, pendingCount);
-  const handleSignOut = () => signOut({ callbackUrl: "/login" });
+  const handleSignOut = React.useCallback(() => signOut({ callbackUrl: "/login" }), []);
+  const contextValue = React.useMemo(() => ({ user, onSignOut: handleSignOut }), [user, handleSignOut]);
 
   return (
-    <div className="flex min-h-screen bg-[#0c0a09] text-stone-100">
-      <AppSidebar
-        navItems={navItems}
-        pathname={pathname}
-        pendingCount={pendingCount}
-        user={user}
-        onSignOut={handleSignOut}
-      />
+    <AppLayoutProvider value={contextValue}>
+      <div className="flex min-h-screen bg-[#0c0a09] text-stone-100">
+        <AppSidebar navItems={navItems} pathname={pathname} />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <AppMobileHeader
-          isMenuOpen={isMobileMenuOpen}
-          onToggleMenu={() => setIsMobileMenuOpen((open) => !open)}
-        />
-
-        {isMobileMenuOpen && (
-          <AppMobileMenu
-            navItems={navItems}
-            pathname={pathname}
-            pendingCount={pendingCount}
-            user={user}
-            onNavigate={() => setIsMobileMenuOpen(false)}
-            onSignOut={handleSignOut}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <AppMobileHeader
+            isMenuOpen={isMobileMenuOpen}
+            onToggleMenu={() => setIsMobileMenuOpen((open) => !open)}
           />
-        )}
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
-        </main>
+          {isMobileMenuOpen && (
+            <AppMobileMenu
+              navItems={navItems}
+              pathname={pathname}
+              onNavigate={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
+          <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="mx-auto max-w-7xl">{children}</div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AppLayoutProvider>
   );
 }

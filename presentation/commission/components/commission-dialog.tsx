@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
 import { CommissionData } from "./commission-table";
 import { CommissionForm } from "./commission-form";
+import { CommissionDialogProvider } from "./commission-dialog-context";
 import { useTechnicianOptions } from "@/presentation/shared/hooks/use-technician-options";
 import { HandCoins } from "lucide-react";
 
@@ -41,15 +42,16 @@ export function CommissionDialog({
           color="violet"
         />
 
-        <CommissionForm
-          key={commissionToEdit?.id ?? "novo"}
-          employees={employees}
-          commissionToEdit={commissionToEdit}
-          defaultMonth={defaultMonth}
-          defaultYear={defaultYear}
-          onSuccess={onSuccess}
-          onClose={onClose}
-        />
+        <CommissionDialogProvider value={{ employees }}>
+          <CommissionForm
+            key={commissionToEdit?.id ?? "novo"}
+            commissionToEdit={commissionToEdit}
+            defaultMonth={defaultMonth}
+            defaultYear={defaultYear}
+            onSuccess={onSuccess}
+            onClose={onClose}
+          />
+        </CommissionDialogProvider>
       </DialogContent>
     </Dialog>
   );

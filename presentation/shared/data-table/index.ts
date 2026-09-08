@@ -10,6 +10,7 @@ import { DataTableActions } from "./data-table-actions";
 import { DataTableIconAction } from "./data-table-icon-action";
 import { DataTableEmptyState } from "./data-table-empty-state";
 import { DataTableLoadingState } from "./data-table-loading-state";
+import { DataTableEntityRow } from "./data-table-entity-row";
 
 export const DataTable = {
   Root: DataTableRoot,
@@ -17,6 +18,7 @@ export const DataTable = {
   HeadCell: DataTableHeadCell,
   Body: TableBody,
   Row: DataTableRow,
+  EntityRow: DataTableEntityRow,
   SelectAllCell: DataTableSelectAllCell,
   SelectRowCell: DataTableSelectRowCell,
   AvatarCell: DataTableAvatarCell,

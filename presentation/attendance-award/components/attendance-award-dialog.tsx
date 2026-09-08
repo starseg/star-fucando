@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
 import { AttendanceAwardData } from "./attendance-award-table";
 import { AttendanceAwardForm } from "./attendance-award-form";
+import { AttendanceAwardDialogProvider } from "./attendance-award-dialog-context";
 import { useEmployeeOptions } from "@/presentation/shared/hooks/use-employee-options";
 import { Award } from "lucide-react";
 
@@ -41,15 +42,16 @@ export function AttendanceAwardDialog({
           color="sky"
         />
 
-        <AttendanceAwardForm
-          key={awardToEdit?.id ?? "novo"}
-          employees={employees}
-          awardToEdit={awardToEdit}
-          defaultMonth={defaultMonth}
-          defaultYear={defaultYear}
-          onSuccess={onSuccess}
-          onClose={onClose}
-        />
+        <AttendanceAwardDialogProvider value={{ employees }}>
+          <AttendanceAwardForm
+            key={awardToEdit?.id ?? "novo"}
+            awardToEdit={awardToEdit}
+            defaultMonth={defaultMonth}
+            defaultYear={defaultYear}
+            onSuccess={onSuccess}
+            onClose={onClose}
+          />
+        </AttendanceAwardDialogProvider>
       </DialogContent>
     </Dialog>
   );
