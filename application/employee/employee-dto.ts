@@ -1,6 +1,6 @@
 export interface EmployeeInput {
   name: string;
-  pix: string;
+  pix?: string | null;
   department?: string | null;
   role?: string | null;
   admissionDate?: string | null;

@@ -16,7 +16,7 @@ const attendanceAwardSchema = z.object({
   id: z.string().optional(),
   employeeId: z.string().min(1, "Selecione o colaborador"),
   referenceMonth: z.string().min(1, "Mês de referência obrigatório"),
-  bonusValue: z.coerce.number().min(0.01, "Informe o valor da bonificação"),
+  bonusValue: z.coerce.number().min(0, "Informe o valor da bonificação"),
 });
 
 export type AttendanceAwardFormData = z.infer<typeof attendanceAwardSchema>;

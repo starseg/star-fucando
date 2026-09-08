@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 const employeeSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  pix: z.string().min(1, "A chave PIX é obrigatória"),
+  pix: z.string().optional(),
   department: z.string().optional(),
   role: z.string().optional(),
   admissionDate: z.string().optional(),

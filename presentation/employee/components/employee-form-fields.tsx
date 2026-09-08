@@ -27,7 +27,7 @@ export function EmployeeFormFields({ register, errors }: EmployeeFormFieldsProps
 
       <div className="space-y-1.5">
         <Label htmlFor="pix" className="text-xs font-semibold text-stone-300">
-          Chave PIX *
+          Chave PIX
         </Label>
         <Input
           id="pix"

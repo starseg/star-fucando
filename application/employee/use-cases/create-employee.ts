@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { requireApprovedUser } from "@/application/auth/auth-guard";
 import { DomainError } from "@/domain/shared/errors/domain-error";
 import { assertValidEmployeeName } from "@/domain/employee/value-objects/employee-name";
-import { assertValidPixKey } from "@/domain/employee/value-objects/pix-key";
+import { normalizePixKey } from "@/domain/employee/value-objects/pix-key";
 import { IEmployeeRepository } from "@/domain/employee/employee.repository.interface";
 import { PrismaEmployeeRepository } from "@/infrastructure/employee/prisma-employee.repository";
 import { EmployeeInput } from "@/application/employee/employee-dto";
@@ -17,7 +17,7 @@ export async function createEmployee(input: EmployeeInput) {
 
   try {
     const name = assertValidEmployeeName(input.name);
-    const pix = assertValidPixKey(input.pix);
+    const pix = normalizePixKey(input.pix);
 
     const employee = await repository.createEmployeeRecord({
       name,

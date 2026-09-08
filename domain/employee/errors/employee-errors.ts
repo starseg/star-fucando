@@ -12,8 +12,3 @@ export class InvalidEmployeeNameError extends DomainError {
   }
 }
 
-export class InvalidEmployeePixError extends DomainError {
-  constructor() {
-    super("A chave PIX do colaborador é obrigatória.");
-  }
-}
