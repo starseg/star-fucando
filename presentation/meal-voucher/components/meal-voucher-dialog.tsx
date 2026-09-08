@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EntityDialogHeader } from "@/presentation/shared/dialog/entity-dialog-header";
 import { MealVoucherData } from "./meal-voucher-table";
 import { MealVoucherForm } from "./meal-voucher-form";
-import { useMealVoucherEmployees } from "../hooks/use-meal-voucher-employees";
+import { useEmployeeOptions } from "@/presentation/shared/hooks/use-employee-options";
 import { Utensils } from "lucide-react";
 
 interface MealVoucherDialogProps {
@@ -25,7 +25,7 @@ export function MealVoucherDialog({
   defaultMonth,
   defaultYear,
 }: MealVoucherDialogProps) {
-  const employees = useMealVoucherEmployees(isOpen);
+  const employees = useEmployeeOptions(isOpen);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
