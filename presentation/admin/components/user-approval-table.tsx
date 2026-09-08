@@ -2,27 +2,14 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { UserRole, UserStatus } from "@prisma/client";
-import { TableCell } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  CheckCircle2,
-  XCircle,
-  ShieldAlert,
-  Shield,
-  UserCheck,
-  UserX,
-  User as UserIcon,
-  ShieldCheck,
-} from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { ShieldCheck } from "lucide-react";
 import { approveUser } from "@/application/user/use-cases/approve-user";
 import { rejectUser } from "@/application/user/use-cases/reject-user";
 import { setUserRole } from "@/application/user/use-cases/set-user-role";
 import { DataTable } from "@/presentation/shared/data-table";
 import { useConfirmedRowAction } from "@/presentation/shared/hooks/use-confirmed-row-action";
+import { UserApprovalTableRow } from "./user-approval-table-row";
 
 export interface UserApprovalItem {
   id: string;
@@ -43,32 +30,6 @@ export interface UserApprovalItem {
 interface UserApprovalTableProps {
   users: UserApprovalItem[];
   currentUserId?: string;
-}
-
-function getStatusBadge(status: UserStatus) {
-  switch (status) {
-    case UserStatus.APPROVED:
-      return (
-        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 gap-1.5 py-1 px-2.5 font-semibold">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          Aprovado
-        </Badge>
-      );
-    case UserStatus.PENDING:
-      return (
-        <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 gap-1.5 py-1 px-2.5 font-semibold">
-          <ShieldAlert className="h-3.5 w-3.5" />
-          Pendente
-        </Badge>
-      );
-    case UserStatus.REJECTED:
-      return (
-        <Badge className="bg-rose-500/10 text-rose-400 border-rose-500/30 gap-1.5 py-1 px-2.5 font-semibold">
-          <XCircle className="h-3.5 w-3.5" />
-          Rejeitado
-        </Badge>
-      );
-  }
 }
 
 export function UserApprovalTable({ users, currentUserId }: UserApprovalTableProps) {
@@ -139,112 +100,17 @@ export function UserApprovalTable({ users, currentUserId }: UserApprovalTablePro
         <DataTable.HeadCell className="text-right pr-5">Ações</DataTable.HeadCell>
       </DataTable.Header>
       <DataTable.Body>
-        {users.map((user) => {
-          const isSelf = user.id === currentUserId;
-          const isProcessing = [approvingId, rejectingId, togglingRoleId].includes(user.id);
-
-          return (
-            <DataTable.Row key={user.id}>
-              <TableCell className="pl-5">
-                <div className="flex items-center gap-3">
-                  {user.image ? (
-                    <Image
-                      src={user.image}
-                      alt={user.name || user.email}
-                      width={36}
-                      height={36}
-                      unoptimized
-                      className="h-9 w-9 rounded-full border border-stone-700 object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-xs">
-                      {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="h-4 w-4" />}
-                    </div>
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-stone-100 text-sm">{user.name || "Sem nome"}</span>
-                      {isSelf && (
-                        <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/20">
-                          Você
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-stone-300 font-mono">{user.email}</span>
-                  </div>
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <div className="flex items-center gap-1.5 text-xs font-medium">
-                  {user.role === UserRole.ADMIN ? (
-                    <span className="inline-flex items-center gap-1 text-amber-400 font-semibold">
-                      <Shield className="h-3.5 w-3.5" /> Admin
-                    </span>
-                  ) : (
-                    <span className="text-stone-300">Usuário</span>
-                  )}
-                </div>
-              </TableCell>
-
-              <TableCell>{getStatusBadge(user.status)}</TableCell>
-
-              <TableCell className="text-xs text-stone-300">{formatDate(user.createdAt)}</TableCell>
-
-              <TableCell className="text-xs text-stone-300">
-                {user.approvedBy ? (
-                  <span title={user.approvedBy.email}>{user.approvedBy.name || user.approvedBy.email}</span>
-                ) : (
-                  "—"
-                )}
-              </TableCell>
-
-              <TableCell className="text-right pr-5">
-                <DataTable.Actions>
-                  {user.status !== UserStatus.APPROVED && (
-                    <Button
-                      size="sm"
-                      disabled={isProcessing}
-                      onClick={() => approveUserRow(user)}
-                      className="h-8 px-2.5 rounded-lg bg-emerald-600/90 text-white hover:bg-emerald-500 text-xs font-semibold gap-1.5 cursor-pointer"
-                    >
-                      <UserCheck className="h-3.5 w-3.5" />
-                      Aprovar
-                    </Button>
-                  )}
-
-                  {user.status !== UserStatus.REJECTED && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={isProcessing || isSelf}
-                      onClick={() => rejectUserRow(user)}
-                      className="h-8 px-2.5 rounded-lg text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 text-xs font-semibold gap-1.5 cursor-pointer disabled:opacity-30"
-                      title={isSelf ? "Você não pode rejeitar a si mesmo" : "Rejeitar acesso"}
-                    >
-                      <UserX className="h-3.5 w-3.5" />
-                      Rejeitar
-                    </Button>
-                  )}
-
-                  {user.status === UserStatus.APPROVED && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={isProcessing || isSelf}
-                      onClick={() => toggleUserRoleRow(user)}
-                      className="h-8 px-2.5 rounded-lg border-stone-700 bg-stone-800/40 text-stone-300 hover:bg-stone-800 text-xs gap-1.5 cursor-pointer disabled:opacity-30"
-                      title={isSelf ? "Você não pode alterar seu próprio papel" : "Alternar papel"}
-                    >
-                      <Shield className="h-3.5 w-3.5 text-amber-400" />
-                      {user.role === UserRole.ADMIN ? "Rebaixar" : "Tornar Admin"}
-                    </Button>
-                  )}
-                </DataTable.Actions>
-              </TableCell>
-            </DataTable.Row>
-          );
-        })}
+        {users.map((user) => (
+          <UserApprovalTableRow
+            key={user.id}
+            user={user}
+            isSelf={user.id === currentUserId}
+            isProcessing={[approvingId, rejectingId, togglingRoleId].includes(user.id)}
+            onApprove={approveUserRow}
+            onReject={rejectUserRow}
+            onToggleRole={toggleUserRoleRow}
+          />
+        ))}
       </DataTable.Body>
     </DataTable.Root>
   );
