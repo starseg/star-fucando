@@ -3,7 +3,7 @@
 import { prisma } from "@/infrastructure/db/prisma";
 import { requireAdmin } from "@/use-cases/auth/auth-guard";
 import { UserStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function approveUser(id: string) {
   const guard = await requireAdmin();
@@ -20,6 +20,7 @@ export async function approveUser(id: string) {
     });
 
     revalidatePath("/admin/aprovacoes");
+    revalidateTag("pending-count", { expire: 0 });
     return { success: true, data: user };
   } catch (error) {
     console.error("Erro ao aprovar usuário:", error);

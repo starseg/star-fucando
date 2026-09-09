@@ -3,7 +3,7 @@
 import { prisma } from "@/infrastructure/db/prisma";
 import { requireAdmin } from "@/use-cases/auth/auth-guard";
 import { UserStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { DomainError } from "@/domain/shared/errors/domain-error";
 import { CannotRejectOwnAccountError } from "@/domain/user/errors/user-errors";
 
@@ -22,6 +22,7 @@ export async function rejectUser(id: string) {
     });
 
     revalidatePath("/admin/aprovacoes");
+    revalidateTag("pending-count", { expire: 0 });
     return { success: true, data: user };
   } catch (error) {
     if (error instanceof DomainError) return { success: false, error: error.message };
