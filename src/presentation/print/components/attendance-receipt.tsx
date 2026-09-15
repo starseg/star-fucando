@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import { formatCurrency } from "@/lib/utils";
+import type { AttendanceAwardType } from "@prisma/client";
 
 interface AttendanceReceiptProps {
   award: {
     id: string;
     referenceMonth: Date | string;
     bonusValue: number;
+    bonusType: AttendanceAwardType;
     employee: {
       name: string;
       department: string | null;
@@ -22,6 +24,7 @@ export function AttendanceReceipt({ award }: AttendanceReceiptProps) {
     award.bonusValue && award.bonusValue > 0
       ? formatCurrency(award.bonusValue)
       : "R$";
+  const isIntegral = award.bonusType === "INTEGRAL";
 
   return (
     <div className="receipt-page bg-white text-black border border-gray-300 shadow-md max-w-[210mm] mx-auto min-h-[145mm] p-10 sm:p-14 mb-8 print:mb-0 print:border-0 print:shadow-none print:p-8 flex flex-col justify-between">
@@ -41,14 +44,17 @@ export function AttendanceReceipt({ award }: AttendanceReceiptProps) {
         <p className="text-sm sm:text-[15px] leading-[1.8] text-black font-sans text-justify mb-6">
           Recebi da empresa o valor de{" "}
           <strong className="font-bold">{bonusFormatted}</strong> referente ao{" "}
-          <strong className="font-bold">Prêmio de Assiduidade</strong>, concedido de forma parcial em
-          razão do não atendimento integral de um ou mais critérios estabelecidos pela empresa para o
-          período avaliado.
+          <strong className="font-bold">Prêmio de Assiduidade</strong>, concedido de forma{" "}
+          {isIntegral ? "integral" : "parcial"}{" "}
+          {isIntegral
+            ? "em razão do pleno atendimento dos critérios estabelecidos pela empresa para o período avaliado."
+            : "em razão do não atendimento integral de um ou mais critérios estabelecidos pela empresa para o período avaliado."}
         </p>
 
         <p className="text-sm sm:text-[15px] leading-[1.8] font-bold text-black font-sans text-justify mb-6">
-          Reconhecemos seu empenho e dedicação durante o período. O valor parcial reflete o cumprimento
-          parcial dos requisitos previstos na política de assiduidade vigente.
+          {isIntegral
+            ? "Reconhecemos seu empenho e dedicação durante o período. O valor integral reflete o cumprimento integral dos requisitos previstos na política de assiduidade vigente."
+            : "Reconhecemos seu empenho e dedicação durante o período. O valor parcial reflete o cumprimento parcial dos requisitos previstos na política de assiduidade vigente."}
         </p>
 
         <p className="text-sm sm:text-[15px] text-black font-sans mb-10">

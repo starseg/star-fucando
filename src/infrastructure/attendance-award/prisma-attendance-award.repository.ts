@@ -89,6 +89,7 @@ export class PrismaAttendanceAwardRepository implements IAttendanceAwardReposito
             employeeId: a.employeeId,
             referenceMonth: targetStart,
             bonusValue: a.bonusValue,
+            bonusType: a.bonusType,
           },
         });
       }

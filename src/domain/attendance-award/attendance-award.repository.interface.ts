@@ -1,4 +1,4 @@
-import type { AttendanceAward, Employee, Prisma } from "@prisma/client";
+import type { AttendanceAward, AttendanceAwardType, Employee, Prisma } from "@prisma/client";
 
 export interface AttendanceAwardPageParams {
   search?: string;
@@ -12,6 +12,7 @@ export interface AttendanceAwardRecordInput {
   employeeId: string;
   referenceMonth: Date;
   bonusValue: number;
+  bonusType: AttendanceAwardType;
 }
 
 export type AttendanceAwardWithEmployee = AttendanceAward & { employee: Employee };

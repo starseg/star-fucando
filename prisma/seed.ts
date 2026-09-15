@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { suggestAttendanceBonusType } from "@/domain/attendance-award/value-objects/bonus-type";
 
 const prisma = new PrismaClient();
 
@@ -238,6 +239,7 @@ async function main() {
         employeeId,
         referenceMonth: refApril2026,
         bonusValue: award.bonusValue,
+        bonusType: suggestAttendanceBonusType(award.bonusValue),
       },
     });
   }

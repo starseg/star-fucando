@@ -18,6 +18,11 @@ enum UserStatus {
   REJECTED
 }
 
+enum AttendanceAwardType {
+  INTEGRAL
+  PARCIAL
+}
+
 model User {
   id            String     @id @default(uuid())
   name          String?
@@ -160,6 +165,7 @@ model AttendanceAward {
   referenceMonth DateTime
 
   bonusValue     Decimal  @db.Decimal(10, 2) // Valor da bonificação
+  bonusType      AttendanceAwardType @default(INTEGRAL)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

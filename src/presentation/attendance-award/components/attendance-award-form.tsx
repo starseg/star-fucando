@@ -4,12 +4,14 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import type { AttendanceAwardType } from "@prisma/client";
 import { EntityDialogFooter } from "@/presentation/shared/dialog/entity-dialog-footer";
 import { upsertAttendanceAward } from "@/use-cases/attendance-award/use-cases/upsert-attendance-award";
 import { AttendanceAwardInput } from "@/use-cases/attendance-award/attendance-award-dto";
 import { AttendanceAwardData } from "./attendance-award-table";
 import { AttendanceAwardEmployeeMonthFields } from "./attendance-award-employee-month-fields";
 import { AttendanceAwardBonusFields } from "./attendance-award-bonus-fields";
+import { suggestAttendanceBonusType } from "@/domain/attendance-award/value-objects/bonus-type";
 import { toast } from "sonner";
 
 const attendanceAwardSchema = z.object({
@@ -17,6 +19,7 @@ const attendanceAwardSchema = z.object({
   employeeId: z.string().min(1, "Selecione o colaborador"),
   referenceMonth: z.string().min(1, "Mês de referência obrigatório"),
   bonusValue: z.coerce.number().min(0, "Informe o valor da bonificação"),
+  bonusType: z.enum(["INTEGRAL", "PARCIAL"]),
 });
 
 export type AttendanceAwardFormData = z.infer<typeof attendanceAwardSchema>;
@@ -58,15 +61,29 @@ export function AttendanceAwardForm({
           employeeId: awardToEdit.employeeId,
           referenceMonth: new Date(awardToEdit.referenceMonth).toISOString().split("T")[0],
           bonusValue: awardToEdit.bonusValue,
+          bonusType: awardToEdit.bonusType,
         }
       : {
           employeeId: "",
           referenceMonth: buildDefaultRefDate(defaultMonth, defaultYear),
           bonusValue: 300.0,
+          bonusType: suggestAttendanceBonusType(300.0),
         },
   });
 
   const watchedBonus = watch("bonusValue") || 0;
+  const watchedBonusType = watch("bonusType");
+  const bonusTypeOverriddenByUserRef = React.useRef(Boolean(awardToEdit));
+
+  const syncBonusTypeFromValue = (value: number) => {
+    if (bonusTypeOverriddenByUserRef.current) return;
+    setValue("bonusType", suggestAttendanceBonusType(value));
+  };
+
+  const overrideBonusTypeSelection = (value: AttendanceAwardType) => {
+    bonusTypeOverriddenByUserRef.current = true;
+    setValue("bonusType", value);
+  };
 
   const persistAttendanceAward = async (data: AttendanceAwardFormData) => {
     setIsLoading(true);
@@ -76,6 +93,7 @@ export function AttendanceAwardForm({
         employeeId: data.employeeId,
         referenceMonth: data.referenceMonth,
         bonusValue: Number(data.bonusValue),
+        bonusType: data.bonusType,
       };
 
       const res = await upsertAttendanceAward(payload);
@@ -107,6 +125,9 @@ export function AttendanceAwardForm({
         register={register}
         bonusError={errors.bonusValue?.message}
         watchedBonus={watchedBonus}
+        onBonusValueChange={syncBonusTypeFromValue}
+        bonusType={watchedBonusType}
+        onBonusTypeChange={overrideBonusTypeSelection}
       />
 
       <EntityDialogFooter

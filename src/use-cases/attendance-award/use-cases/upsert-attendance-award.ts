@@ -28,6 +28,7 @@ export async function upsertAttendanceAward(input: AttendanceAwardInput) {
       employeeId: input.employeeId,
       referenceMonth: new Date(input.referenceMonth),
       bonusValue: input.bonusValue,
+      bonusType: input.bonusType,
     };
 
     const award = input.id

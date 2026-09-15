@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Award } from "lucide-react";
+import type { AttendanceAwardType } from "@prisma/client";
 import { deleteAttendanceAward } from "@/use-cases/attendance-award/use-cases/delete-attendance-award";
 import { attendanceAwardCopyConfig } from "../attendance-award-copy-config";
 import { DataTable } from "@/presentation/shared/data-table";
@@ -19,6 +20,7 @@ export interface AttendanceAwardData {
   employeeId: string;
   referenceMonth: Date | string;
   bonusValue: number;
+  bonusType: AttendanceAwardType;
   employee: {
     id: string;
     name: string;
