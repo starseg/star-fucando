@@ -12,7 +12,10 @@ interface MealVoucherCopyButtonProps {
   targetYear: number;
 }
 
-export function MealVoucherCopyButton({ targetMonth, targetYear }: MealVoucherCopyButtonProps) {
+export function MealVoucherCopyButton({
+  targetMonth,
+  targetYear,
+}: MealVoucherCopyButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -22,10 +25,10 @@ export function MealVoucherCopyButton({ targetMonth, targetYear }: MealVoucherCo
         variant="outline"
         onClick={() => setIsOpen(true)}
         className="border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl h-10 px-3.5 text-xs shadow-sm"
-        title="Copiar todos os lançamentos do mês anterior"
+        title="Copiar todos os lançamentos do mês selecionado"
       >
         <Copy className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
-        Copiar Mês Anterior
+        Copiar Lançamentos de Outro Mês
       </Button>
 
       <CopyPreviousMonthDialog

@@ -38,16 +38,30 @@ interface MealVoucherTableProps {
   year: number;
 }
 
-export function MealVoucherTable({ vouchers, month, year }: MealVoucherTableProps) {
+export function MealVoucherTable({
+  vouchers,
+  month,
+  year,
+}: MealVoucherTableProps) {
   const router = useRouter();
-  const { selectedIds, allSelected, toggleSelect, toggleSelectAll, clearSelection } = useRowSelection(vouchers);
-  const [editingVoucher, setEditingVoucher] = React.useState<MealVoucherData | null>(null);
+  const {
+    selectedIds,
+    allSelected,
+    toggleSelect,
+    toggleSelectAll,
+    clearSelection,
+  } = useRowSelection(vouchers);
+  const [editingVoucher, setEditingVoucher] =
+    React.useState<MealVoucherData | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
 
-  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(deleteMealVoucher, {
-    onDeleted: () => router.refresh(),
-  });
+  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(
+    deleteMealVoucher,
+    {
+      onDeleted: () => router.refresh(),
+    },
+  );
 
   const openEditDialog = (voucher: MealVoucherData) => {
     setEditingVoucher(voucher);
@@ -59,7 +73,7 @@ export function MealVoucherTable({ vouchers, month, year }: MealVoucherTableProp
       voucher.id,
       `Excluir o Vale Alimentação de "${voucher.employee.name}"?`,
       "Lançamento excluído com sucesso!",
-      "Erro ao excluir lançamento."
+      "Erro ao excluir lançamento.",
     );
 
   const printReceipts = (ids: string[]) => {
@@ -72,10 +86,15 @@ export function MealVoucherTable({ vouchers, month, year }: MealVoucherTableProp
 
   const printAccountingReport = (ids: string[]) => {
     if (ids.length === 0) {
-      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      toast.warning(
+        "Selecione pelo menos um lançamento para imprimir o relatório.",
+      );
       return;
     }
-    window.open(`/imprimir-contabilidade?tipo=alimentacao&ids=${ids.join(",")}&mes=${month}&ano=${year}`, "_blank");
+    window.open(
+      `/imprimir-contabilidade?tipo=alimentacao&ids=${ids.join(",")}&mes=${month}&ano=${year}`,
+      "_blank",
+    );
   };
 
   if (vouchers.length === 0) {
@@ -84,7 +103,7 @@ export function MealVoucherTable({ vouchers, month, year }: MealVoucherTableProp
         <DataTable.EmptyState
           icon={Utensils}
           title="Nenhum lançamento encontrado"
-          description="Você pode cadastrar um novo lançamento ou copiar os dados do mês anterior com 1 clique."
+          description="Você pode cadastrar um novo lançamento ou copiar os dados do mês selecionado com 1 clique."
           color="emerald"
           actionLabel="Copiar Lançamentos do Mês Anterior"
           onAction={() => setIsCopyDialogOpen(true)}
@@ -106,12 +125,21 @@ export function MealVoucherTable({ vouchers, month, year }: MealVoucherTableProp
     <>
       <DataTable.Root>
         <DataTable.Header>
-          <DataTable.SelectAllCell checked={allSelected} onCheckedChange={toggleSelectAll} />
+          <DataTable.SelectAllCell
+            checked={allSelected}
+            onCheckedChange={toggleSelectAll}
+          />
           <DataTable.HeadCell>Colaborador</DataTable.HeadCell>
           <DataTable.HeadCell>Dias / Diária</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right">Total Bruto</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right">Valor Líquido</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right w-36">Ações</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right">
+            Total Bruto
+          </DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right">
+            Valor Líquido
+          </DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right w-36">
+            Ações
+          </DataTable.HeadCell>
         </DataTable.Header>
         <DataTable.Body>
           {vouchers.map((voucher) => (

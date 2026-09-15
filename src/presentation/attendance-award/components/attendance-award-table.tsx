@@ -35,16 +35,30 @@ interface AttendanceAwardTableProps {
   year: number;
 }
 
-export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTableProps) {
+export function AttendanceAwardTable({
+  awards,
+  month,
+  year,
+}: AttendanceAwardTableProps) {
   const router = useRouter();
-  const { selectedIds, allSelected, toggleSelect, toggleSelectAll, clearSelection } = useRowSelection(awards);
-  const [editingAward, setEditingAward] = React.useState<AttendanceAwardData | null>(null);
+  const {
+    selectedIds,
+    allSelected,
+    toggleSelect,
+    toggleSelectAll,
+    clearSelection,
+  } = useRowSelection(awards);
+  const [editingAward, setEditingAward] =
+    React.useState<AttendanceAwardData | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
 
-  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(deleteAttendanceAward, {
-    onDeleted: () => router.refresh(),
-  });
+  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(
+    deleteAttendanceAward,
+    {
+      onDeleted: () => router.refresh(),
+    },
+  );
 
   const openEditDialog = (award: AttendanceAwardData) => {
     setEditingAward(award);
@@ -56,7 +70,7 @@ export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTab
       award.id,
       `Excluir a premiação de assiduidade de "${award.employee.name}"?`,
       "Lançamento excluído com sucesso!",
-      "Erro ao excluir lançamento."
+      "Erro ao excluir lançamento.",
     );
 
   const printReceipts = (ids: string[]) => {
@@ -69,10 +83,15 @@ export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTab
 
   const printAccountingReport = (ids: string[]) => {
     if (ids.length === 0) {
-      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      toast.warning(
+        "Selecione pelo menos um lançamento para imprimir o relatório.",
+      );
       return;
     }
-    window.open(`/imprimir-contabilidade?tipo=assiduidade&ids=${ids.join(",")}&mes=${month}&ano=${year}`, "_blank");
+    window.open(
+      `/imprimir-contabilidade?tipo=assiduidade&ids=${ids.join(",")}&mes=${month}&ano=${year}`,
+      "_blank",
+    );
   };
 
   if (awards.length === 0) {
@@ -81,7 +100,7 @@ export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTab
         <DataTable.EmptyState
           icon={Award}
           title="Nenhum lançamento encontrado"
-          description="Você pode cadastrar uma nova bonificação ou copiar os dados do mês anterior com 1 clique."
+          description="Você pode cadastrar uma nova bonificação ou copiar os dados do mês selecionado com 1 clique."
           color="sky"
           actionLabel="Copiar Premiações do Mês Anterior"
           onAction={() => setIsCopyDialogOpen(true)}
@@ -103,12 +122,19 @@ export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTab
     <>
       <DataTable.Root>
         <DataTable.Header>
-          <DataTable.SelectAllCell checked={allSelected} onCheckedChange={toggleSelectAll} />
+          <DataTable.SelectAllCell
+            checked={allSelected}
+            onCheckedChange={toggleSelectAll}
+          />
           <DataTable.HeadCell>Colaborador</DataTable.HeadCell>
           <DataTable.HeadCell>Competência</DataTable.HeadCell>
           <DataTable.HeadCell>Tipo</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right">Valor da Bonificação</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right w-36">Ações</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right">
+            Valor da Bonificação
+          </DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right w-36">
+            Ações
+          </DataTable.HeadCell>
         </DataTable.Header>
         <DataTable.Body>
           {awards.map((award) => (

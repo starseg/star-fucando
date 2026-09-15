@@ -29,11 +29,13 @@ interface CopyPreviousMonthDialogProps {
 const COLOR_STYLES = {
   amber: {
     badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    button: "bg-amber-500 text-stone-950 hover:bg-amber-400 shadow-amber-500/20",
+    button:
+      "bg-amber-500 text-stone-950 hover:bg-amber-400 shadow-amber-500/20",
   },
   emerald: {
     badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    button: "bg-emerald-500 text-stone-950 hover:bg-emerald-400 shadow-emerald-500/20",
+    button:
+      "bg-emerald-500 text-stone-950 hover:bg-emerald-400 shadow-emerald-500/20",
   },
   sky: {
     badge: "bg-sky-500/10 text-sky-400 border-sky-500/20",
@@ -41,7 +43,8 @@ const COLOR_STYLES = {
   },
   violet: {
     badge: "bg-violet-500/10 text-violet-400 border-violet-500/20",
-    button: "bg-violet-500 text-stone-950 hover:bg-violet-400 shadow-violet-500/20",
+    button:
+      "bg-violet-500 text-stone-950 hover:bg-violet-400 shadow-violet-500/20",
   },
 };
 
@@ -56,11 +59,12 @@ export function CopyPreviousMonthDialog({
   const { benefitTitle, accentColor, onCopy } = config;
   const [isLoading, setIsLoading] = React.useState(false);
 
-  // Mês padrão de origem: mês anterior ao selecionado
+  // Mês padrão de origem: mês selecionado ao selecionado
   const defaultSourceMonth = targetMonth === 1 ? 12 : targetMonth - 1;
   const defaultSourceYear = targetMonth === 1 ? targetYear - 1 : targetYear;
 
-  const [sourceMonth, setSourceMonth] = React.useState<number>(defaultSourceMonth);
+  const [sourceMonth, setSourceMonth] =
+    React.useState<number>(defaultSourceMonth);
   const [sourceYear, setSourceYear] = React.useState<number>(defaultSourceYear);
 
   React.useEffect(() => {
@@ -80,12 +84,17 @@ export function CopyPreviousMonthDialog({
 
     setIsLoading(true);
     try {
-      const res = await onCopy(sourceMonth, sourceYear, targetMonth, targetYear);
+      const res = await onCopy(
+        sourceMonth,
+        sourceYear,
+        targetMonth,
+        targetYear,
+      );
       if (res.success) {
         toast.success(
           `${res.count || 0} lançamento(s) de ${benefitTitle} copiado(s) de ${
             MONTH_NAMES[sourceMonth - 1]
-          }/${sourceYear} para ${MONTH_NAMES[targetMonth - 1]}/${targetYear}!`
+          }/${sourceYear} para ${MONTH_NAMES[targetMonth - 1]}/${targetYear}!`,
         );
         onSuccess();
         onClose();
@@ -102,7 +111,10 @@ export function CopyPreviousMonthDialog({
   const years = [targetYear - 1, targetYear, targetYear + 1];
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && !isLoading && onClose()}
+    >
       <DialogContent className="sm:max-w-md bg-[#141210] border-stone-800 text-stone-100 p-6 rounded-2xl shadow-2xl">
         <DialogHeader className="pb-3 border-b border-stone-800/80">
           <div className="flex items-center gap-2.5">
@@ -134,7 +146,10 @@ export function CopyPreviousMonthDialog({
             onSourceYearChange={setSourceYear}
           />
 
-          <CopyPreviousMonthNotice targetMonth={targetMonth} targetYear={targetYear} />
+          <CopyPreviousMonthNotice
+            targetMonth={targetMonth}
+            targetYear={targetYear}
+          />
 
           <DialogFooter className="pt-3 border-t border-stone-800">
             <Button

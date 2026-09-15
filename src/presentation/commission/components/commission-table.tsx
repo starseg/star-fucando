@@ -35,16 +35,30 @@ interface CommissionTableProps {
   year: number;
 }
 
-export function CommissionTable({ commissions, month, year }: CommissionTableProps) {
+export function CommissionTable({
+  commissions,
+  month,
+  year,
+}: CommissionTableProps) {
   const router = useRouter();
-  const { selectedIds, allSelected, toggleSelect, toggleSelectAll, clearSelection } = useRowSelection(commissions);
-  const [editingCommission, setEditingCommission] = React.useState<CommissionData | null>(null);
+  const {
+    selectedIds,
+    allSelected,
+    toggleSelect,
+    toggleSelectAll,
+    clearSelection,
+  } = useRowSelection(commissions);
+  const [editingCommission, setEditingCommission] =
+    React.useState<CommissionData | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
 
-  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(deleteCommission, {
-    onDeleted: () => router.refresh(),
-  });
+  const { deletingId, deleteWithConfirmation } = useDeleteWithConfirmation(
+    deleteCommission,
+    {
+      onDeleted: () => router.refresh(),
+    },
+  );
 
   const openEditDialog = (commission: CommissionData) => {
     setEditingCommission(commission);
@@ -56,7 +70,7 @@ export function CommissionTable({ commissions, month, year }: CommissionTablePro
       commission.id,
       `Excluir a comissão de "${commission.employee.name}"?`,
       "Lançamento excluído com sucesso!",
-      "Erro ao excluir lançamento."
+      "Erro ao excluir lançamento.",
     );
 
   const printReceipts = (ids: string[]) => {
@@ -69,10 +83,15 @@ export function CommissionTable({ commissions, month, year }: CommissionTablePro
 
   const printAccountingReport = (ids: string[]) => {
     if (ids.length === 0) {
-      toast.warning("Selecione pelo menos um lançamento para imprimir o relatório.");
+      toast.warning(
+        "Selecione pelo menos um lançamento para imprimir o relatório.",
+      );
       return;
     }
-    window.open(`/imprimir-contabilidade?tipo=comissao&ids=${ids.join(",")}&mes=${month}&ano=${year}`, "_blank");
+    window.open(
+      `/imprimir-contabilidade?tipo=comissao&ids=${ids.join(",")}&mes=${month}&ano=${year}`,
+      "_blank",
+    );
   };
 
   if (commissions.length === 0) {
@@ -81,7 +100,7 @@ export function CommissionTable({ commissions, month, year }: CommissionTablePro
         <DataTable.EmptyState
           icon={HandCoins}
           title="Nenhum lançamento encontrado"
-          description="Você pode cadastrar uma nova comissão ou copiar os dados do mês anterior com 1 clique."
+          description="Você pode cadastrar uma nova comissão ou copiar os dados do mês selecionado com 1 clique."
           color="violet"
           actionLabel="Copiar Comissões do Mês Anterior"
           onAction={() => setIsCopyDialogOpen(true)}
@@ -103,11 +122,18 @@ export function CommissionTable({ commissions, month, year }: CommissionTablePro
     <>
       <DataTable.Root>
         <DataTable.Header>
-          <DataTable.SelectAllCell checked={allSelected} onCheckedChange={toggleSelectAll} />
+          <DataTable.SelectAllCell
+            checked={allSelected}
+            onCheckedChange={toggleSelectAll}
+          />
           <DataTable.HeadCell>Colaborador</DataTable.HeadCell>
           <DataTable.HeadCell>Competência</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right">Valor da Comissão</DataTable.HeadCell>
-          <DataTable.HeadCell className="text-right w-36">Ações</DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right">
+            Valor da Comissão
+          </DataTable.HeadCell>
+          <DataTable.HeadCell className="text-right w-36">
+            Ações
+          </DataTable.HeadCell>
         </DataTable.Header>
         <DataTable.Body>
           {commissions.map((commission) => (

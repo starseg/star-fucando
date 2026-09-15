@@ -35,6 +35,6 @@ export async function copyAttendanceAwards(
   } catch (error) {
     if (error instanceof DomainError) return { success: false, error: error.message };
     console.error("Erro ao copiar prêmios de assiduidade:", error);
-    return { success: false, error: "Falha ao copiar prêmios de assiduidade do mês anterior." };
+    return { success: false, error: "Falha ao copiar prêmios de assiduidade do mês selecionado." };
   }
 }
