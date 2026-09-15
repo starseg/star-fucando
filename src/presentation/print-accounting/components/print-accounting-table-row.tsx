@@ -1,6 +1,6 @@
-import * as React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatMonthYear } from "@/lib/utils";
+import { AttendanceAwardTypeBadge } from "@/presentation/attendance-award/components/attendance-award-type-badge";
 import type { PrintAccountingItem } from "../print-accounting-view";
 
 interface PrintAccountingTableRowProps {
@@ -93,6 +93,9 @@ export function PrintAccountingTableRow({ tipo, item, badgeColor }: PrintAccount
         <>
           <TableCell className="text-xs font-medium text-stone-300 py-3.5">
             {formatMonthYear(item.referenceMonth)}
+          </TableCell>
+          <TableCell className="py-3.5">
+            {item.bonusType && <AttendanceAwardTypeBadge type={item.bonusType} />}
           </TableCell>
           <TableCell className="text-right pr-4 py-3.5">
             <span className="text-base font-black text-sky-400 block">

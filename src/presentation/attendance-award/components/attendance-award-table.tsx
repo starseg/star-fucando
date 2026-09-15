@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -106,6 +106,7 @@ export function AttendanceAwardTable({ awards, month, year }: AttendanceAwardTab
           <DataTable.SelectAllCell checked={allSelected} onCheckedChange={toggleSelectAll} />
           <DataTable.HeadCell>Colaborador</DataTable.HeadCell>
           <DataTable.HeadCell>Competência</DataTable.HeadCell>
+          <DataTable.HeadCell>Tipo</DataTable.HeadCell>
           <DataTable.HeadCell className="text-right">Valor da Bonificação</DataTable.HeadCell>
           <DataTable.HeadCell className="text-right w-36">Ações</DataTable.HeadCell>
         </DataTable.Header>

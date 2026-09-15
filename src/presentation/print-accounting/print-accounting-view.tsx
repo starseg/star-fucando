@@ -30,6 +30,7 @@ export interface PrintAccountingItem {
   discounts?: number | null;
   netValue?: number;
   bonusValue?: number;
+  bonusType?: "INTEGRAL" | "PARCIAL";
   commissionValue?: number;
 }
 

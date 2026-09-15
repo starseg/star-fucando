@@ -2,6 +2,7 @@ import * as React from "react";
 import { TableCell } from "@/components/ui/table";
 import { formatCurrency, formatMonthYear } from "@/lib/utils";
 import { DataTable } from "@/presentation/shared/data-table";
+import { AttendanceAwardTypeBadge } from "./attendance-award-type-badge";
 import type { AttendanceAwardData } from "./attendance-award-table";
 
 interface AttendanceAwardTableRowProps {
@@ -36,6 +37,9 @@ export function AttendanceAwardTableRow({
     >
       <TableCell className="text-xs font-medium text-stone-300">
         {formatMonthYear(award.referenceMonth)}
+      </TableCell>
+      <TableCell>
+        <AttendanceAwardTypeBadge type={award.bonusType} />
       </TableCell>
       <TableCell className="text-right">
         <span className="text-base font-black text-sky-400 block">{formatCurrency(award.bonusValue)}</span>
