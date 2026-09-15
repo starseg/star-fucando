@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -11,7 +11,11 @@ import { AttendanceAwardInput } from "@/use-cases/attendance-award/attendance-aw
 import { AttendanceAwardData } from "./attendance-award-table";
 import { AttendanceAwardEmployeeMonthFields } from "./attendance-award-employee-month-fields";
 import { AttendanceAwardBonusFields } from "./attendance-award-bonus-fields";
-import { suggestAttendanceBonusType } from "@/domain/attendance-award/value-objects/bonus-type";
+import {
+  FULL_ATTENDANCE_BONUS_VALUE,
+  suggestAttendanceBonusType,
+} from "@/domain/attendance-award/value-objects/bonus-type";
+import { AttendanceAwardConfirmIntegralDialog } from "./attendance-award-confirm-integral-dialog";
 import { toast } from "sonner";
 
 const attendanceAwardSchema = z.object({
@@ -73,16 +77,29 @@ export function AttendanceAwardForm({
 
   const watchedBonus = watch("bonusValue") || 0;
   const watchedBonusType = watch("bonusType");
-  const bonusTypeOverriddenByUserRef = React.useRef(Boolean(awardToEdit));
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
 
   const syncBonusTypeFromValue = (value: number) => {
-    if (bonusTypeOverriddenByUserRef.current) return;
-    setValue("bonusType", suggestAttendanceBonusType(value));
+    const parsed = Number.isFinite(value) ? value : 0;
+    setValue("bonusType", suggestAttendanceBonusType(parsed), { shouldValidate: true });
   };
 
-  const overrideBonusTypeSelection = (value: AttendanceAwardType) => {
-    bonusTypeOverriddenByUserRef.current = true;
-    setValue("bonusType", value);
+  const handleBonusTypeChange = (value: AttendanceAwardType) => {
+    const numericBonus = Number.isFinite(Number(watchedBonus)) ? Number(watchedBonus) : 0;
+    if (value === "INTEGRAL" && numericBonus < FULL_ATTENDANCE_BONUS_VALUE) {
+      setIsConfirmModalOpen(true);
+      return;
+    }
+    setValue("bonusType", value, { shouldValidate: true });
+  };
+
+  const confirmIntegral = () => {
+    setValue("bonusType", "INTEGRAL", { shouldValidate: true });
+    setIsConfirmModalOpen(false);
+  };
+
+  const cancelIntegral = () => {
+    setIsConfirmModalOpen(false);
   };
 
   const persistAttendanceAward = async (data: AttendanceAwardFormData) => {
@@ -113,29 +130,38 @@ export function AttendanceAwardForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(persistAttendanceAward)} className="space-y-4 pt-2">
-      <AttendanceAwardEmployeeMonthFields
-        employeeId={watch("employeeId")}
-        onEmployeeIdChange={(val) => setValue("employeeId", val)}
-        employeeIdError={errors.employeeId?.message}
-        register={register}
-      />
+    <>
+      <form onSubmit={handleSubmit(persistAttendanceAward)} className="space-y-4 pt-2">
+        <AttendanceAwardEmployeeMonthFields
+          employeeId={watch("employeeId")}
+          onEmployeeIdChange={(val) => setValue("employeeId", val)}
+          employeeIdError={errors.employeeId?.message}
+          register={register}
+        />
 
-      <AttendanceAwardBonusFields
-        register={register}
-        bonusError={errors.bonusValue?.message}
-        watchedBonus={watchedBonus}
-        onBonusValueChange={syncBonusTypeFromValue}
-        bonusType={watchedBonusType}
-        onBonusTypeChange={overrideBonusTypeSelection}
-      />
+        <AttendanceAwardBonusFields
+          register={register}
+          bonusError={errors.bonusValue?.message}
+          watchedBonus={watchedBonus}
+          onBonusValueChange={syncBonusTypeFromValue}
+          bonusType={watchedBonusType}
+          onBonusTypeChange={handleBonusTypeChange}
+        />
 
-      <EntityDialogFooter
-        onCancel={onClose}
-        isSubmitting={isLoading}
-        submitLabel={awardToEdit ? "Salvar Alterações" : "Cadastrar Premiação"}
-        color="sky"
+        <EntityDialogFooter
+          onCancel={onClose}
+          isSubmitting={isLoading}
+          submitLabel={awardToEdit ? "Salvar Alterações" : "Cadastrar Premiação"}
+          color="sky"
+        />
+      </form>
+
+      <AttendanceAwardConfirmIntegralDialog
+        isOpen={isConfirmModalOpen}
+        bonusValue={Number(watchedBonus) || 0}
+        onConfirm={confirmIntegral}
+        onCancel={cancelIntegral}
       />
-    </form>
+    </>
   );
 }
